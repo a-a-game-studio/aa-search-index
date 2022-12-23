@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import ip from 'ip'
 import { reject } from "lodash";
 import { mWait } from "../Helper/WaitH";
-import { MsgContextI, MsgT } from "../interface/CommonI";
+import { MsgContextI, QueryT } from "../interface/CommonI";
 
 
 export class MqClientSys {
@@ -116,7 +116,7 @@ export class MqClientSys {
             this.iSendErr++;
             console.error(err);
         });
-        this.querySys.fSend(MsgT.send, vMsg);
+        this.querySys.fSend(QueryT.send, vMsg);
         this.iSend++;
 	}
 
@@ -189,7 +189,7 @@ export class MqClientSys {
                 this.iSendErr++;
                 console.error(err);
             });
-            this.querySys.fSend(MsgT.send, aMsg);
+            this.querySys.fSend(QueryT.send, aMsg);
 
             // console.log(aMsg);
 
@@ -285,7 +285,7 @@ export class MqClientSys {
         this.querySys.fActionErr((err:any) => {
             reject(err)
         });
-        this.querySys.fSend(MsgT.ask, {
+        this.querySys.fSend(QueryT.ask, {
             app:this.conf.nameApp,
             ip:ip.address(),
             queue:sQueue
@@ -301,7 +301,7 @@ export class MqClientSys {
         this.querySys.fActionErr((err:any) => {
             console.error(err);
         });
-        this.querySys.fSend(MsgT.work, {
+        this.querySys.fSend(QueryT.work, {
             app:this.conf.nameApp,
             ip:ip.address(),
             queue:sQueue
@@ -317,7 +317,7 @@ export class MqClientSys {
         this.querySys.fActionErr((err:any) => {
             console.error(err);
         });
-        this.querySys.fSend(MsgT.count, {
+        this.querySys.fSend(QueryT.count, {
             app:this.conf.nameApp,
             ip:ip.address(),
             queue:sQueue
@@ -333,7 +333,7 @@ export class MqClientSys {
         this.querySys.fActionErr((err:any) => {
             console.error(err);
         });
-        this.querySys.fSend(MsgT.info, {
+        this.querySys.fSend(QueryT.info, {
             app:this.conf.nameApp,
             ip:ip.address(),
             queue:sQueue

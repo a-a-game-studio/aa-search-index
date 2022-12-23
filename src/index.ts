@@ -1,4 +1,4 @@
-import { MsgContextI, MsgT } from "./interface/CommonI";
+import { MsgContextI, QueryT } from "./interface/CommonI";
 import { MqClientSys } from "./System/MqClientSys";
 import { MqServerSys } from "./System/MqServerSys";
 
@@ -6,6 +6,6 @@ import { MqServerSys } from "./System/MqServerSys";
 export {
     MqClientSys,
     MqServerSys,
-    MsgT,
+    QueryT as MsgT,
     MsgContextI
 }

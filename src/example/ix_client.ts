@@ -29,14 +29,45 @@ async function run(){
     
     // await mqClientSys.waitSend();
 
-    const aUser = await db('phpbb_users').select({id:'user_id'}, 'username', 'user_fullname', 'user_mobile')
-            .limit(1000)
-            .orderBy('user_id', 'asc');
+    //===========================================
+
+    // const aUser = await db('phpbb_users').select({id:'user_id'}, 'username', 'user_fullname', 'user_mobile')
+    //         .limit(1000)
+    //         .orderBy('user_id', 'asc');
 
     
+    // console.time('tInsert')
+    // await mqClientSys.insert('user', aUser);
+    // console.timeEnd('tInsert')
 
-    await mqClientSys.insert('user', aUser);
+    // console.time('tSelect')
+    // await mqClientSys.select('user', [
+    //     'match username Ольга',
+    //     'limit 100'
+    // ]);
 
+    const iPack = 100000;
+    const iOffset = 500000000;
+
+
+    for (let i = 0; i < 1000; i++) {
+        const aItem = await db('item').select({id:'item_id'}, 'item_name', 'item_desc')
+            .where('item_id', '>', iOffset+ i * iPack)
+            .where('item_id', '<', iOffset+ (i+1) * iPack)
+            .orderBy('item_id', 'asc');
+
+        console.log('====>', 'pos',iOffset+ i*iPack,aItem.length)
+        console.time('tInsert')
+        await mqClientSys.insert('user', aItem);
+        console.timeEnd('tInsert')
+        
+    }
+    
+
+    
+    
+   
+    console.time('tSelect')
     await mqClientSys.select('user', [
         'match username Ольга',
         'limit 100'

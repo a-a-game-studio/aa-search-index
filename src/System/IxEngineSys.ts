@@ -6,7 +6,9 @@ import { CmdT, QueryContextI } from "../interface/CommonI";
 export class IxEngineSys {
 
     ixData:Record<string, Record<number, { n:string, nl:string }>> = {};
+    
     ixLetter:Record<string, Record<string, number[]>> = {};
+    ixLetterIx:Record<string, Record<string, Record<number, number>>> = {};
 
 
 /** Кодирование информации по пользователю */
@@ -49,24 +51,30 @@ export class IxEngineSys {
             const sFindText = aFindText[c];
             if (ixLetterCol[sFindText]){
                 const aIndex = ixLetterCol[sFindText];
-                console.log('aIndex', aIndex);
+                // console.log('aIndex', aIndex);
+
+                const ixUniq:Record<number, boolean> = {};
 
                 for (let i = 0; i < aIndex.length; i++) {
                     const idData = aIndex[i];
+
                     if (!ixIndex[idData] && c == 0){
                         ixIndex[idData] = 0;
                     }
 
-                    if (ixIndex[idData] >= c){
-                        ixIndex[idData]++;
-                    } else if (ixIndex[idData]) {
-                        console.log('delete', ixIndex[idData]);
-                        delete ixIndex[idData];
+                    if(!ixUniq[idData]){
+                        if (ixIndex[idData] >= c){
+                            ixIndex[idData]++;
+                            ixUniq[idData] = true;
+                        } else if (ixIndex[idData]) {
+                            console.log('delete', ixIndex[idData]);
+                            delete ixIndex[idData];
+                        }
                     }
 
                 }
 
-                console.log(ixIndex);
+                // console.log(ixIndex);
 
             }
 
@@ -84,7 +92,7 @@ export class IxEngineSys {
 
         const aFindLoginRaw = aIndexSort;
 
-        console.log('aFindLoginRaw', aFindLoginRaw);
+        // console.log('aFindLoginRaw', aFindLoginRaw);
 
         // const aEqLen = []
         // const aEqLenLow = [];
@@ -126,10 +134,20 @@ export class IxEngineSys {
         return ixFind;
     }
 
+
+    
+
+    cnt = 0;
+    cntCopy = 0;
     /** indexation */
     fIndexation(aData:any[]){
 
-        console.log(aData[0])
+        // console.log(aData[0])
+
+        // const ixOldDataChunk:Record<string, Record<string, Record<number, number>>> = {};
+
+        const ixChunkUse:Record<string, Record<string, number>> = {};
+        
 
         for (let c = 0; c < aData.length; c++) {
             const vRow = aData[c];
@@ -138,12 +156,20 @@ export class IxEngineSys {
 
             for (let i = 0; i < akData.length; i++) {
                 const sCol = akData[i];
-
+                
                 if ('id' != sCol){
 
                     if (!this.ixData[sCol]){
                         this.ixData[sCol] = {};
                     }
+
+                    let vOldVal = this.ixData[sCol][vRow['id']];
+
+                    // TODO тут можно оптимизировать бесполезное удаление и бесполезную индексацию при повторной индексации того же самого
+                    if(vOldVal && vOldVal.nl == vRow[sCol].toLowerCase()){ // Если равно не производить
+                        continue;
+                    }
+                    
 
                     this.ixData[sCol][vRow['id']] = {
                         n:vRow[sCol],
@@ -152,28 +178,102 @@ export class IxEngineSys {
 
                     const aDataChunk = _.uniq(this.encriptChunk(vRow[sCol].toLowerCase()));
 
+                    if(vOldVal){ // Если есть старое значение чистим лишнее
+                        const aOldChunk = this.encriptChunk(vOldVal.nl)
+
+                        // const aDelChunk = _.difference(aOldChunk, aDataChunk);
+
+                        const vLetterCol = this.ixLetterIx[sCol];
+                        for (let i = 0; i < aOldChunk.length; i++) {
+                            const sOldChunk = aOldChunk[i];
+
+                            // if(!this.ixChunkUse[sCol]){
+                            //     this.ixChunkUse[sCol] = {};
+                            // }
+
+                            // if(!this.ixChunkUse[sCol][sOldChunk]){
+                            //     this.ixChunkUse[sCol][sOldChunk] = 0;
+                            // }
+                            
+                            // if(vLetterCol && vLetterCol[sOldChunk] && vLetterCol[sOldChunk][vRow.id]){
+                            //     delete vLetterCol[sOldChunk][vRow.id];
+                            // }
+                        }
+                       
+                    }
+
                     for (let i = 0; i < aDataChunk.length; i++) {
                         const sDataChunk = aDataChunk[i];
 
-                        if (!this.ixLetter[sCol]){
+                        if (!this.ixLetterIx[sCol]){
                             this.ixLetter[sCol] = {};
+                            this.ixLetterIx[sCol] = {};
                         }
 
-                        if (!this.ixLetter[sCol][sDataChunk]){
+                        if (!this.ixLetterIx[sCol][sDataChunk]){
                             this.ixLetter[sCol][sDataChunk] = []; // Индекс
+                            this.ixLetterIx[sCol][sDataChunk] = {}; // Индекс
                         }
 
-                        this.ixLetter[sCol][sDataChunk].push(vRow.id);
+                        
+                        
+
+                        // console.log(this.ixLetterIx[sCol][sDataChunk][vRow.id])
+
+                        if(this.ixLetterIx[sCol][sDataChunk][vRow.id]){
+
+                            if(!ixChunkUse[sCol]){
+                                ixChunkUse[sCol] = {};
+                            }
+    
+                            if(!ixChunkUse[sCol][sDataChunk]){
+                                ixChunkUse[sCol][sDataChunk] = 0;
+                            }
+                            ixChunkUse[sCol][sDataChunk]++;
+                            
+                        }
+
+                        this.ixLetter[sCol][sDataChunk].push(vRow.id)
+                        this.ixLetterIx[sCol][sDataChunk][vRow.id] = vRow.id;
+
+                        this.cnt++;
+                        if(this.cntCopy++ > 100000){
+                            this.cntCopy = 0;
+                            console.log('this.ixLetter',this.cnt, this.cntCopy);
+                        }
+
                     }
                 }
             }
 
             // vUser.username;
 
-
         }
 
-        console.log('this.ixLetter',this.ixLetter);
+
+        // const akChunkUse = Object.keys(ixChunkUse);
+        for (const kColUse in ixChunkUse) {
+            const vChunkUse = ixChunkUse[kColUse]
+            
+            for (const kChunkUse in vChunkUse) {
+                this.ixLetter[kColUse][kChunkUse] = Object.values(this.ixLetterIx[kColUse][kChunkUse]);
+                this.cnt++;
+
+                this.cntCopy += this.ixLetter[kColUse][kChunkUse].length;
+
+                console.log('this.ixLetter',this.cnt, this.cntCopy);
+
+                if(this.cnt % 10000 == 0){
+                    
+                    
+                    this.cntCopy = 0;
+                }
+                
+            }
+        }
+        process.stdout.write('.')
+
+        
     }
 
     /** Получить количество записей по запросу */
@@ -217,6 +317,8 @@ export class IxEngineSys {
                 ixQuery[CmdT.count].push(aQuery)
             }
         }
+
+        console.log('ixQuery:',ixQuery);
         
 
         // console.log('ixData', ixData);
@@ -230,7 +332,9 @@ export class IxEngineSys {
 
         if(ixQuery[CmdT.match]){
             for (let i = 0; i < ixQuery[CmdT.match].length; i++) {
-                const aQuery = ixQuery[CmdT.match];
+                const aQuery = ixQuery[CmdT.match][i];
+
+                console.log('query:',aQuery.slice(2).join(' ').toLowerCase(), aQuery[1])
                 aResult.push(this.find(aQuery.slice(2).join(' ').toLowerCase(), aQuery[1]));
             }
         }
@@ -311,18 +415,18 @@ export class IxEngineSys {
 
         // console.log(ixData);
 
-        const aOutData = [];
-        for (let i = 0; i < aSortResult.length; i++) {
-            const idData = Number(aSortResult[i]);
+        // const aOutData = [];
+        // for (let i = 0; i < aSortResult.length; i++) {
+        //     const idData = Number(aSortResult[i]);
 
-            if (this.ixData.username[idData]){
-                aOutData.push([idData, ixResult[idData], this.ixData.username[idData].n, this.ixData.user_fullname[idData].n, this.ixData.user_mobile[idData].n]);
-            } else {
-                console.log('Не найден:', idData);
-            }
-        }
+        //     if (this.ixData.username[idData]){
+        //         aOutData.push([idData, ixResult[idData], this.ixData.username[idData].n, this.ixData.user_fullname[idData].n, this.ixData.user_mobile[idData].n]);
+        //     } else {
+        //         console.log('Не найден:', idData);
+        //     }
+        // }
 
-        console.log('aOutData', aOutData);
+        // console.log('aOutData', aOutData);
 
 
     }

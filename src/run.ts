@@ -4,7 +4,7 @@ import { AAContext, AARoute, AAServer } from '@a-a-game-studio/aa-server';
 
 import { faSendRouter as faSend } from './System/ResponseSys';
 
-import { MsgContextI, QueryT } from './interface/CommonI';
+import { QueryContextI, QueryT } from './interface/CommonI';
 import { common } from './Config/MainConfig';
 import { IxEngineSys } from './System/IxEngineSys';
 
@@ -47,10 +47,7 @@ const router = new AARoute();
  */
  router.ws(QueryT.select, async (ctx: AAContext) => {
 
-    // console.log(ctx.body)
-    // console.log('Это вопрос от клиента')
-
-    const data = gIxEngineSys.get(ctx.body);
+    const data = gIxEngineSys.search(ctx.body);
     process.stdout.write('.');
     // console.log('ask>>>',ctx.body, data)
 
@@ -69,7 +66,6 @@ const router = new AARoute();
  router.ws(QueryT.count, async (ctx: AAContext) => {
 
     const data = gIxEngineSys.count(ctx.body.queue);
-    console.log('count>>>',ctx.body, data)
 
     // if(data){
         return faSend(ctx, data);

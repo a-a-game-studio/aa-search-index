@@ -1,11 +1,11 @@
-import { MsgContextI, QueryT } from "./interface/CommonI";
-import { MqClientSys } from "./System/MqClientSys";
-import { MqServerSys } from "./System/MqServerSys";
+import { QueryContextI, QueryT } from "./interface/CommonI";
+import { IxClientSys } from "./System/IxClientSys";
+import { IxEngineSys } from "./System/IxEngineSys";
 
 
 export {
-    MqClientSys,
-    MqServerSys,
-    QueryT as MsgT,
-    MsgContextI
+    IxClientSys,
+    IxEngineSys,
+    QueryT,
+    QueryContextI
 }

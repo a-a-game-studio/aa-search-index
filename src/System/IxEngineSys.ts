@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { CmdT, QueryContextI } from "../interface/CommonI";
 
 
 /** Система очередей */
@@ -127,6 +128,9 @@ export class IxEngineSys {
 
     /** indexation */
     fIndexation(aData:any[]){
+
+        console.log(aData[0])
+
         for (let c = 0; c < aData.length; c++) {
             const vRow = aData[c];
 
@@ -159,7 +163,7 @@ export class IxEngineSys {
                             this.ixLetter[sCol][sDataChunk] = []; // Индекс
                         }
 
-                        this.ixLetter[sCol][sDataChunk].push(vRow.user_id);
+                        this.ixLetter[sCol][sDataChunk].push(vRow.id);
                     }
                 }
             }
@@ -168,14 +172,51 @@ export class IxEngineSys {
 
 
         }
+
+        console.log('this.ixLetter',this.ixLetter);
+    }
+
+    /** Получить количество записей по запросу */
+    public async count(query:QueryContextI) {
     }
 
     /** run */
-    public async run() {
-        const aUser = await db('phpbb_users').select('user_id', 'username', 'user_fullname', 'user_mobile')
-            .limit(1000)
-            .orderBy('user_id', 'asc');
+    public async search(query:QueryContextI) {
 
+        
+
+        const ixQuery:Record<CmdT, any[]> = <any>{};
+
+        for (let i = 0; i < query.query.length; i++) {
+            let sQuery = query.query[i];
+            
+            sQuery = sQuery.replace('\s+', ' ');
+            const aQuery = sQuery.split(' ');
+
+            const sCmd = aQuery[0];
+
+            if(sCmd == CmdT.match){ // MATCH
+                if(!ixQuery[CmdT.match]){
+                    ixQuery[CmdT.match] = [];
+                }
+                ixQuery[CmdT.match].push(aQuery)
+
+            } else if(sCmd == CmdT.limit){ // LIMIT
+                ixQuery[CmdT.limit] = aQuery;
+
+            } else if(sCmd == CmdT.where){ // WHERE
+                if(!ixQuery[CmdT.where]){
+                    ixQuery[CmdT.where] = [];
+                }
+                ixQuery[CmdT.where].push(aQuery)
+
+            } else if(sCmd == CmdT.count){ // COUNT
+                if(!ixQuery[CmdT.count]){
+                    ixQuery[CmdT.count] = [];
+                }
+                ixQuery[CmdT.count].push(aQuery)
+            }
+        }
         
 
         // console.log('ixData', ixData);
@@ -186,12 +227,14 @@ export class IxEngineSys {
         const ixResult:Record<string, number> = {};
 
         console.time('t');
-        for (let i = 0; i < 1; i++) {
-            aResult.push(this.find('Ольга'.toLowerCase(), 'username'));
-            aResult.push(this.find('Ольга'.toLowerCase(), 'username'));
-            aResult.push(this.find('Ольга'.toLowerCase(), 'user_fullname'));
-            aResult.push(this.find('111'.toLowerCase(), 'user_mobile'));
+
+        if(ixQuery[CmdT.match]){
+            for (let i = 0; i < ixQuery[CmdT.match].length; i++) {
+                const aQuery = ixQuery[CmdT.match];
+                aResult.push(this.find(aQuery.slice(2).join(' ').toLowerCase(), aQuery[1]));
+            }
         }
+        
 
         console.log('result:', aResult[0]);
 

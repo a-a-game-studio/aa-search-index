@@ -18,6 +18,15 @@ export enum CmdT {
     limit = 'limit' // ограничение выборки
 }
 
+export enum SchemaT {
+    ix_string = 'ix_string', // 256 символов
+    ix_text = 'ix_text', // > 256 символов индексирует словами >= 3 символов
+    enum = 'enum', // точное сопоставление в нижнем регистре
+    text = 'text', // атрибут ищет через indexOf 
+    int = 'int', // атрибут целые числа - ишет перебором
+    num = 'num', // атрибут дробные -  ишет перебором
+}
+
 export interface QueryContextI {
     uid?:string; // Уникальный идентификатор запроса
     app:string; // Наименование приложения

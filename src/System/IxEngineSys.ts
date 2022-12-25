@@ -6,41 +6,47 @@ import { CmdT, QueryContextI } from "../interface/CommonI";
 export class IxEngineSys {
 
     ixData:Record<string, Record<number, { n:string, nl:string }>> = {};
-    
     ixLetter:Record<string, Record<string, number[]>> = {};
     ixLetterIx:Record<string, Record<string, Record<number, number>>> = {};
 
+    // Тип Enum
+    ixEnum:Record<string, Record<string, number[]>>= {};
 
-/** Кодирование информации по пользователю */
+
+    /** Кодирование информации по пользователю */
     encriptChunk(sWord: string): string[] {
 
-        const aEncript: string[] = [];
+        const sWordLow = sWord.toLowerCase()
 
-        for (let i = 0; i < sWord.length; i++) {
-            const sChar = sWord[i];
+        const ixEncript: Record<string, string> = {};
 
-            if (i === 0 || i === sWord.length - 1) {
+        for (let i = 0; i < sWordLow.length; i++) {
+            const sChar = sWordLow[i];
+
+            if (i === 0 || i === sWordLow.length - 1) {
                 continue;
             }
 
-            const sCharLeft = sWord[i - 1];
-            const sCharRight = sWord[i + 1];
+            const sCharLeft = sWordLow[i - 1];
+            const sCharRight = sWordLow[i + 1];
 
             // console.log(sCharLeft, sChar, sCharRight);
 
             const sCript = [sCharLeft, sChar, sCharRight].join('-');
 
-            aEncript.push(sCript);
+            if(!ixEncript[sCript]){
+                ixEncript[sCript] = sCript
+            }
+            
         }
 
-
-        return aEncript;
+        return Object.values(ixEncript);
 
     }
 
     /** find */
     find(sText:string, sCol:string):Record<number, number>{
-        const aFindText = this.encriptChunk(sText.toLowerCase());
+        const aFindText = this.encriptChunk(sText);
         const sTextLow = sText.toLowerCase();
 
         const ixDataCol = this.ixData[sCol];
@@ -176,28 +182,19 @@ export class IxEngineSys {
                         nl:vRow[sCol].toLowerCase(),
                     };
 
-                    const aDataChunk = _.uniq(this.encriptChunk(vRow[sCol].toLowerCase()));
+                    const aDataChunk = this.encriptChunk(vRow[sCol]);
 
                     if(vOldVal){ // Если есть старое значение чистим лишнее
                         const aOldChunk = this.encriptChunk(vOldVal.nl)
-
-                        // const aDelChunk = _.difference(aOldChunk, aDataChunk);
+                        const aDelChunk = _.difference(aOldChunk, aDataChunk);
 
                         const vLetterCol = this.ixLetterIx[sCol];
-                        for (let i = 0; i < aOldChunk.length; i++) {
-                            const sOldChunk = aOldChunk[i];
-
-                            // if(!this.ixChunkUse[sCol]){
-                            //     this.ixChunkUse[sCol] = {};
-                            // }
-
-                            // if(!this.ixChunkUse[sCol][sOldChunk]){
-                            //     this.ixChunkUse[sCol][sOldChunk] = 0;
-                            // }
+                        for (let i = 0; i < aDelChunk.length; i++) {
+                            const sOldChunk = aDelChunk[i];
                             
-                            // if(vLetterCol && vLetterCol[sOldChunk] && vLetterCol[sOldChunk][vRow.id]){
-                            //     delete vLetterCol[sOldChunk][vRow.id];
-                            // }
+                            if(vLetterCol && vLetterCol[sOldChunk] && vLetterCol[sOldChunk][vRow.id]){
+                                delete vLetterCol[sOldChunk][vRow.id];
+                            }
                         }
                        
                     }

@@ -1,16 +1,17 @@
 import _ from "lodash";
-import { CmdT, QueryContextI } from "../interface/CommonI";
+import { CmdT, QueryContextI, SchemaT } from '../interface/CommonI';
 
 
 /** Система очередей */
 export class IxEngineSys {
 
-    ixData:Record<string, Record<number, { n:string, nl:string }>> = {};
+    ixSchema:Record<string, SchemaT> = {};
+
+    // Данные таблица
+    ixData:Record<number, Record<string, any>> = {};
+
     ixLetter:Record<string, Record<string, number[]>> = {};
     ixLetterIx:Record<string, Record<string, Record<number, number>>> = {};
-
-    // Тип Enum
-    ixEnum:Record<string, Record<string, number[]>>= {};
 
 
     /** Кодирование информации по пользователю */
@@ -44,12 +45,13 @@ export class IxEngineSys {
 
     }
 
-    /** find */
+    /** find fulltext */
     find(sText:string, sCol:string):Record<number, number>{
         const aFindText = this.encriptChunk(sText);
         const sTextLow = sText.toLowerCase();
 
-        const ixDataCol = this.ixData[sCol];
+        console.log('find>>>', sText, sCol, this.ixLetter);
+
         const ixLetterCol = this.ixLetter[sCol];
 
         const ixIndex:Record<number, number> = {};
@@ -83,7 +85,6 @@ export class IxEngineSys {
                 // console.log(ixIndex);
 
             }
-
         }
 
         const aIndexSort:number[] = [];
@@ -92,8 +93,6 @@ export class IxEngineSys {
             if (v >= aFindText.length){
                 aIndexSort.push(Number(k));
             }
-
-
         }
 
         const aFindLoginRaw = aIndexSort;
@@ -108,7 +107,7 @@ export class IxEngineSys {
         for (let i = 0; i < aFindLoginRaw.length; i++) {
             const idFindLoginRaw = aFindLoginRaw[i];
 
-            const sLowWord = ixDataCol[idFindLoginRaw].nl;
+            const sLowWord = this.ixData[idFindLoginRaw][sCol];
 
             if (sTextLow.length == sLowWord.length){
                 if (sTextLow == sLowWord){
@@ -140,15 +139,18 @@ export class IxEngineSys {
         return ixFind;
     }
 
-
+    /** Установить схему */
+    fSchema(ixData:Record<string, SchemaT>){
+        this.ixSchema = ixData;
+    }
     
 
     cnt = 0;
     cntCopy = 0;
-    /** indexation */
+    /** Индексация */
     fIndexation(aData:any[]){
 
-        // console.log(aData[0])
+        // console.log(aData)
 
         // const ixOldDataChunk:Record<string, Record<string, Record<number, number>>> = {};
 
@@ -158,95 +160,106 @@ export class IxEngineSys {
         for (let c = 0; c < aData.length; c++) {
             const vRow = aData[c];
 
+            const idRow = vRow.id;
+
+            if (!this.ixData[idRow]){
+                this.ixData[idRow] = {};
+            }
+
+            console.log('row', vRow)
+
             const akData = Object.keys(vRow);
 
             for (let i = 0; i < akData.length; i++) {
                 const sCol = akData[i];
+
+                console.log('indexation', sCol)
                 
-                if ('id' != sCol){
+                if ('id' == sCol){
+                    continue;
+                }
 
-                    if (!this.ixData[sCol]){
-                        this.ixData[sCol] = {};
-                    }
+                // Получить старое значение
+                let vOldVal = this.ixData[idRow][sCol];
 
-                    let vOldVal = this.ixData[sCol][vRow['id']];
+                // Назначить новое значение
+                this.ixData[idRow][sCol] = vRow[sCol];
 
-                    // TODO тут можно оптимизировать бесполезное удаление и бесполезную индексацию при повторной индексации того же самого
-                    if(vOldVal && vOldVal.nl == vRow[sCol].toLowerCase()){ // Если равно не производить
-                        continue;
+                if(
+                    this.ixSchema[sCol] && this.ixSchema[sCol] != SchemaT.ix_string && this.ixSchema[sCol] != SchemaT.ix_text
+                ){
+                    continue;
+                }
+
+                // TODO тут можно оптимизировать бесполезное удаление и бесполезную индексацию при повторной индексации того же самого
+                if(vOldVal && vOldVal == vRow[sCol].toLowerCase()){ // Если равно не производить
+                    continue;
+                }
+
+                const aDataChunk = this.encriptChunk(vRow[sCol]);
+
+                if(vOldVal){ // Если есть старое значение чистим лишнее
+                    const aOldChunk = this.encriptChunk(vOldVal);
+                    const aDelChunk = _.difference(aOldChunk, aDataChunk);
+
+                    const vLetterCol = this.ixLetterIx[sCol];
+                    for (let i = 0; i < aDelChunk.length; i++) {
+                        const sOldChunk = aDelChunk[i];
+                        
+                        if(vLetterCol && vLetterCol[sOldChunk] && vLetterCol[sOldChunk][vRow.id]){
+                            delete vLetterCol[sOldChunk][vRow.id];
+                        }
                     }
                     
-
-                    this.ixData[sCol][vRow['id']] = {
-                        n:vRow[sCol],
-                        nl:vRow[sCol].toLowerCase(),
-                    };
-
-                    const aDataChunk = this.encriptChunk(vRow[sCol]);
-
-                    if(vOldVal){ // Если есть старое значение чистим лишнее
-                        const aOldChunk = this.encriptChunk(vOldVal.nl)
-                        const aDelChunk = _.difference(aOldChunk, aDataChunk);
-
-                        const vLetterCol = this.ixLetterIx[sCol];
-                        for (let i = 0; i < aDelChunk.length; i++) {
-                            const sOldChunk = aDelChunk[i];
-                            
-                            if(vLetterCol && vLetterCol[sOldChunk] && vLetterCol[sOldChunk][vRow.id]){
-                                delete vLetterCol[sOldChunk][vRow.id];
-                            }
-                        }
-                       
-                    }
-
-                    for (let i = 0; i < aDataChunk.length; i++) {
-                        const sDataChunk = aDataChunk[i];
-
-                        if (!this.ixLetterIx[sCol]){
-                            this.ixLetter[sCol] = {};
-                            this.ixLetterIx[sCol] = {};
-                        }
-
-                        if (!this.ixLetterIx[sCol][sDataChunk]){
-                            this.ixLetter[sCol][sDataChunk] = []; // Индекс
-                            this.ixLetterIx[sCol][sDataChunk] = {}; // Индекс
-                        }
-
-                        
-                        
-
-                        // console.log(this.ixLetterIx[sCol][sDataChunk][vRow.id])
-
-                        if(this.ixLetterIx[sCol][sDataChunk][vRow.id]){
-
-                            if(!ixChunkUse[sCol]){
-                                ixChunkUse[sCol] = {};
-                            }
-    
-                            if(!ixChunkUse[sCol][sDataChunk]){
-                                ixChunkUse[sCol][sDataChunk] = 0;
-                            }
-                            ixChunkUse[sCol][sDataChunk]++;
-                            
-                        }
-
-                        this.ixLetter[sCol][sDataChunk].push(vRow.id)
-                        this.ixLetterIx[sCol][sDataChunk][vRow.id] = vRow.id;
-
-                        this.cnt++;
-                        if(this.cntCopy++ > 100000){
-                            this.cntCopy = 0;
-                            console.log('this.ixLetter',this.cnt, this.cntCopy);
-                        }
-
-                    }
                 }
+
+                for (let i = 0; i < aDataChunk.length; i++) {
+                    const sDataChunk = aDataChunk[i];
+
+                    if (!this.ixLetterIx[sCol]){
+                        this.ixLetter[sCol] = {};
+                        this.ixLetterIx[sCol] = {};
+                    }
+
+                    if (!this.ixLetterIx[sCol][sDataChunk]){
+                        this.ixLetter[sCol][sDataChunk] = []; // Индекс
+                        this.ixLetterIx[sCol][sDataChunk] = {}; // Индекс
+                    }
+
+                    
+                    
+
+                    // console.log(this.ixLetterIx[sCol][sDataChunk][vRow.id])
+
+                    if(this.ixLetterIx[sCol][sDataChunk][vRow.id]){
+
+                        if(!ixChunkUse[sCol]){
+                            ixChunkUse[sCol] = {};
+                        }
+
+                        if(!ixChunkUse[sCol][sDataChunk]){
+                            ixChunkUse[sCol][sDataChunk] = 0;
+                        }
+                        ixChunkUse[sCol][sDataChunk]++;
+                        
+                    }
+
+                    this.ixLetter[sCol][sDataChunk].push(vRow.id)
+                    this.ixLetterIx[sCol][sDataChunk][vRow.id] = vRow.id;
+
+                    this.cnt++;
+                    if(this.cntCopy++ > 100000){
+                        this.cntCopy = 0;
+                        console.log('this.ixLetter',this.cnt, this.cntCopy);
+                    }
+
+                }
+                
             }
 
             // vUser.username;
 
         }
-
 
         // const akChunkUse = Object.keys(ixChunkUse);
         for (const kColUse in ixChunkUse) {
@@ -279,8 +292,6 @@ export class IxEngineSys {
 
     /** run */
     public async search(query:QueryContextI) {
-
-        
 
         const ixQuery:Record<CmdT, any[]> = <any>{};
 

@@ -28,6 +28,18 @@ const router = new AARoute();
 
 // app.use(ParseBodyMiddleware);
 
+/**
+ * Приход сообщений
+ */
+router.ws(QueryT.schema, async (ctx: AAContext) => {
+
+    console.log('QueryT.schema');
+    gIxEngineSys.fSchema(ctx.body.data);
+
+    return faSend(ctx, null);
+    
+});
+
 
 /**
  * Приход сообщений

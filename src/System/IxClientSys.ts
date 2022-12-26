@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import ip from 'ip'
 import { reject } from "lodash";
 import { mWait } from "../Helper/WaitH";
-import { QueryContextI, QueryT } from "../interface/CommonI";
+import { QueryContextI, QueryT, SchemaT } from '../interface/CommonI';
 
 
 export class IxClientSys {
@@ -58,6 +58,35 @@ export class IxClientSys {
         this.conf.nameApp = option.nameApp;
     }
 
+     /**
+	 * Отправить сообщение в очередь
+	 * @param sQueue
+	 * @param msg
+	 */
+	public schema(sIndex:string, param:Record<string, SchemaT>) {
+        return new Promise((resolve, reject) => {
+            const uidMsg = uuidv4();
+            const vMsg = <QueryContextI>{
+                uid:uidMsg,
+                app:this.conf.nameApp,
+                ip:ip.address(),
+                index:sIndex,
+                data:<any>param,
+                time:Date.now()
+            }
+            this.ixSendMsg[uidMsg] = vMsg;
+
+            this.querySys.fInit();
+            this.querySys.fActionOk((data: string[]) => {
+                resolve(data)
+            });
+            this.querySys.fActionErr((err:any) => {
+                reject(err);
+            });
+            this.querySys.fSend(QueryT.schema, vMsg);
+        });
+    }
+
 
     /**
 	 * Отправить сообщение в очередь
@@ -71,7 +100,6 @@ export class IxClientSys {
                 if(!data[i]?.id){
                     reject(new Error('Отсутствует id'));
                 };
-                
             }
 
             const uidMsg = uuidv4();

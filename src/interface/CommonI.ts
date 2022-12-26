@@ -2,6 +2,7 @@
 export enum QueryT {
     connect = '/connect', // Сообщение о соединении
     check = '/check', // Проверка соединения
+    schema = '/schema', // Сообщение о соединении
     insert = '/insert', // Отправить сообщение
     select = '/select', // Получить сообщение
     count = '/count', // Количество сообщений

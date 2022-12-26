@@ -21,11 +21,12 @@ async function run(){
     await mqClientSys.schema('user', {
         'username':SchemaT.ix_string,
         'user_fullname':SchemaT.ix_string,
-        'user_mobile':SchemaT.ix_string
+        'user_mobile':SchemaT.ix_string,
+        'consumer_rating':SchemaT.int
     });
 
-    const aUser = await db('phpbb_users').select({id:'user_id'}, 'username', 'user_fullname', 'user_mobile')
-            .limit(1000)
+    const aUser = await db('phpbb_users').select({id:'user_id'}, 'username', 'user_fullname', 'user_mobile', 'consumer_rating')
+            .limit(10000)
             .orderBy('user_id', 'asc');
 
     
@@ -36,7 +37,8 @@ async function run(){
     console.time('tSelect')
     await mqClientSys.select('user', [
         'match username Ольга',
-        'limit 100'
+        'where consumer_rating = 3',
+        'limit 10'
     ]);
     console.timeEnd('tSelect')
 

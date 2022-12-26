@@ -50,7 +50,7 @@ export class IxEngineSys {
         const aFindText = this.encriptChunk(sText);
         const sTextLow = sText.toLowerCase();
 
-        console.log('find>>>', sText, sCol, this.ixLetter);
+        console.log('find>>>', sTextLow, sCol);
 
         const ixLetterCol = this.ixLetter[sCol];
 
@@ -107,17 +107,19 @@ export class IxEngineSys {
         for (let i = 0; i < aFindLoginRaw.length; i++) {
             const idFindLoginRaw = aFindLoginRaw[i];
 
-            const sLowWord = this.ixData[idFindLoginRaw][sCol];
+            const sWordLow = this.ixData[idFindLoginRaw][sCol];
 
-            if (sTextLow.length == sLowWord.length){
-                if (sTextLow == sLowWord){
+            // console.log(sTextLow, sTextLow.length, sWordLow, sWordLow.length);
+
+            if (sTextLow.length == sWordLow.length){
+                if (sTextLow == sWordLow){
                     if(!ixFind[idFindLoginRaw]){
                         ixFind[idFindLoginRaw] = 0;
                     }
                     ixFind[idFindLoginRaw] += 3;
                 }
             } else {
-                if (sLowWord.indexOf(sTextLow) == 0){
+                if (sWordLow.indexOf(sTextLow) == 0){
                     if(!ixFind[idFindLoginRaw]){
                         ixFind[idFindLoginRaw] = 0;
                     }
@@ -166,33 +168,36 @@ export class IxEngineSys {
                 this.ixData[idRow] = {};
             }
 
-            console.log('row', vRow)
+            // console.log('row', vRow)
 
             const akData = Object.keys(vRow);
 
             for (let i = 0; i < akData.length; i++) {
                 const sCol = akData[i];
 
-                console.log('indexation', sCol)
+                // console.log('indexation', sCol)
                 
                 if ('id' == sCol){
                     continue;
                 }
 
                 // Получить старое значение
-                let vOldVal = this.ixData[idRow][sCol];
+                let vOldVal = null;
 
-                // Назначить новое значение
-                this.ixData[idRow][sCol] = vRow[sCol];
+                if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_string || this.ixSchema[sCol] == SchemaT.ix_text){
+                    // Назначить новое значение
+                    vOldVal = this.ixData[idRow][sCol];
 
-                if(
-                    this.ixSchema[sCol] && this.ixSchema[sCol] != SchemaT.ix_string && this.ixSchema[sCol] != SchemaT.ix_text
-                ){
+                    vRow[sCol] = vRow[sCol].toLowerCase();
+                    this.ixData[idRow][sCol] = vRow[sCol];
+                } else {
+                    // Назначить новое значение
+                    this.ixData[idRow][sCol] = vRow[sCol];
                     continue;
                 }
 
                 // TODO тут можно оптимизировать бесполезное удаление и бесполезную индексацию при повторной индексации того же самого
-                if(vOldVal && vOldVal == vRow[sCol].toLowerCase()){ // Если равно не производить
+                if(vOldVal && vOldVal == vRow[sCol]){ // Если равно не производить
                     continue;
                 }
 
@@ -225,9 +230,6 @@ export class IxEngineSys {
                         this.ixLetter[sCol][sDataChunk] = []; // Индекс
                         this.ixLetterIx[sCol][sDataChunk] = {}; // Индекс
                     }
-
-                    
-                    
 
                     // console.log(this.ixLetterIx[sCol][sDataChunk][vRow.id])
 
@@ -274,8 +276,6 @@ export class IxEngineSys {
                 console.log('this.ixLetter',this.cnt, this.cntCopy);
 
                 if(this.cnt % 10000 == 0){
-                    
-                    
                     this.cntCopy = 0;
                 }
                 
@@ -329,10 +329,6 @@ export class IxEngineSys {
         console.log('ixQuery:',ixQuery);
         
 
-        // console.log('ixData', ixData);
-        // =====================================
-        // Запрос писать тут лимит 100000(не все пользователи)
-        // =====================================
         const aResult:Record<number, number>[] = [];
         const ixResult:Record<string, number> = {};
 
@@ -348,8 +344,7 @@ export class IxEngineSys {
         }
         
 
-        console.log('result:', aResult[0]);
-
+        // console.log('result:', aResult[0]);
         for (let i = 0; i < aResult.length; i++) {
             const vResult = aResult[i];
 
@@ -362,6 +357,36 @@ export class IxEngineSys {
                 ixResult[kRes]+=vRes;
             }
         }
+
+        const aResultPair = Object.entries(ixResult);
+        if(ixQuery[CmdT.where]){
+
+            
+            for (const kRes in ixResult) {
+                const idData = Number(kRes);
+                const vRow = this.ixData[idData];
+
+                console.log('WHERE', kRes, idData, vRow);
+
+                for (let i = 0; i < ixQuery[CmdT.where].length; i++) {
+                    const aCmd = ixQuery[CmdT.where][i];
+
+                    console.log(aCmd);
+                    if(aCmd[2] == '='){
+                        if(vRow[aCmd[1]] != Number(aCmd[3])){
+                            delete ixResult[idData];
+                        }
+                    }
+                }
+            }
+        }
+
+        let aSortResult = Object.entries(ixResult).sort((a,b) => b[1] - a[1]).map(el => el[0])
+
+        if(ixQuery[CmdT.limit]){
+            aSortResult = aSortResult.slice(0, Number(ixQuery[CmdT.limit][1]) || 10);
+        }
+
 
         // for (const kRes in result) {
         //     const vRes = result[kRes];
@@ -394,7 +419,7 @@ export class IxEngineSys {
         //     }
         // }
 
-        const aSortResult = Object.entries(ixResult).sort((a,b) => b[1] - a[1]).map(el => el[0])
+        
 
         // console.log('ixResult:', );
 
@@ -423,18 +448,19 @@ export class IxEngineSys {
 
         // console.log(ixData);
 
-        // const aOutData = [];
-        // for (let i = 0; i < aSortResult.length; i++) {
-        //     const idData = Number(aSortResult[i]);
+        const aOutData = [];
+        for (let i = 0; i < aSortResult.length; i++) {
+            const idData = Number(aSortResult[i]);
 
-        //     if (this.ixData.username[idData]){
-        //         aOutData.push([idData, ixResult[idData], this.ixData.username[idData].n, this.ixData.user_fullname[idData].n, this.ixData.user_mobile[idData].n]);
-        //     } else {
-        //         console.log('Не найден:', idData);
-        //     }
-        // }
+            if (this.ixData[idData]){
+                const aLineData = [];
+                aOutData.push([idData, ixResult[idData], this.ixData[idData]]);
+            } else {
+                console.log('Не найден:', idData);
+            }
+        }
 
-        // console.log('aOutData', aOutData);
+        console.log('aOutData', aOutData);
 
 
     }

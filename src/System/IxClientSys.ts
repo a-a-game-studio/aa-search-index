@@ -133,6 +133,7 @@ export class IxClientSys {
         return new Promise((resolve, reject) => {
             this.querySys.fInit();
             this.querySys.fActionOk((data:number[]) => {
+                console.log(data);
                 resolve(data);
             });
             this.querySys.fActionErr((err:any) => {

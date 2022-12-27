@@ -51,7 +51,7 @@ export class IxEngineSys {
 
     /** find fulltext */
     find(sText:string, sCol:string):Record<number, number>{
-        const aFindText = this.encriptChunk(sText);
+        
         const sTextLow = sText.toLowerCase();
         const ixFind:Record<number, number> = {}; // Результат
 
@@ -59,6 +59,8 @@ export class IxEngineSys {
         console.log('find>>>', sTextLow, sCol);
 
         if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_string || this.ixSchema[sCol] == SchemaT.ix_text){
+
+            const aFindText = this.encriptChunk(sText);
 
             const ixLetterCol = this.ixLetter[sCol];
 
@@ -136,7 +138,11 @@ export class IxEngineSys {
 
             }
         } else if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_enum) {
-            this.ixEnum[vRow[sCol]]
+            const aidData = this.ixEnum[sCol][sTextLow].list;
+            for (let i = 0; i < aidData.length; i++) {
+                const idData = aidData[i];
+                ixFind[idData] = 3;
+            }
         }
 
         // const asFindResult = _.concat(aEqLenLow,aMoreLenLowFirst,aMoreLenLow)
@@ -157,17 +163,12 @@ export class IxEngineSys {
     /** Индексация */
     fIndexation(aData:any[]){
 
-        // console.log(aData)
-
-        // const ixOldDataChunk:Record<string, Record<string, Record<number, number>>> = {};
-
         const ixChunkLetterUse:Record<string, Record<string, number>> = {};
         const ixChunkEnumUse:Record<string, Record<string, number>> = {};
         
 
         for (let c = 0; c < aData.length; c++) {
             const vRow = aData[c];
-
             const idRow = vRow.id;
 
             if (!this.ixData[idRow]){
@@ -198,9 +199,9 @@ export class IxEngineSys {
                     vRow[sCol] = vRow[sCol].toLowerCase();
                     this.ixData[idRow][sCol] = vRow[sCol];
                 } else if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_enum) {
-                    const sOldVal = IndexationTaskN.fIxEnum(this, idRow, sCol, vRow[sCol]);
-                    if(sOldVal){
-                        ixChunkEnumUse[sCol]
+                    const sUseEnum = IndexationTaskN.fIxEnum(this, idRow, sCol, vRow[sCol]);
+                    if(sUseEnum){
+                        ixChunkEnumUse[sCol][sUseEnum];
                     }
                     continue;
                 } else {
@@ -265,7 +266,7 @@ export class IxEngineSys {
                     this.cnt++;
                     if(this.cntCopy++ > 100000){
                         this.cntCopy = 0;
-                        console.log('this.ixLetter',this.cnt, this.cntCopy);
+                        console.log('indexation_chunk',this.cnt, this.cntCopy);
                     }
 
                 }
@@ -294,6 +295,23 @@ export class IxEngineSys {
                 
             }
         }
+        for (const kColUse in ixChunkEnumUse) {
+            const vEnumUse = ixChunkEnumUse[kColUse]
+            
+            for (const kEnumUse in vEnumUse) {
+                this.ixEnum[kColUse][kEnumUse].list = Object.values(this.ixEnum[kColUse][kEnumUse].ix);
+                this.cnt++;
+
+                this.cntCopy += this.ixEnum[kColUse][kEnumUse].list.length;
+
+                console.log('this.ixEnum',this.cnt, this.cntCopy);
+
+                if(this.cnt % 10000 == 0){
+                    this.cntCopy = 0;
+                }
+                
+            }
+        }
         process.stdout.write('.')
 
         
@@ -304,7 +322,7 @@ export class IxEngineSys {
     }
 
     /** run */
-    public async search(query:QueryContextI) {
+    public search(query:QueryContextI) {
 
         const ixQuery:Record<CmdT, any[]> = <any>{};
 
@@ -354,24 +372,31 @@ export class IxEngineSys {
                 console.log('query:',aQuery.slice(2).join(' ').toLowerCase(), aQuery[1])
                 aResult.push(this.find(aQuery.slice(2).join(' ').toLowerCase(), aQuery[1]));
             }
-        }
-        
 
-        // console.log('result:', aResult[0]);
-        for (let i = 0; i < aResult.length; i++) {
-            const vResult = aResult[i];
-
-            for (const kRes in vResult) {
-                const vRes = vResult[kRes];
-
-                if (!ixResult[kRes]){
-                    ixResult[kRes] = 0;
+            // Сборка значений поиска
+            for (let i = 0; i < aResult.length; i++) {
+                const vResult = aResult[i];
+    
+                for (const kRes in vResult) {
+                    const vRes = vResult[kRes];
+    
+                    if (!ixResult[kRes]){
+                        ixResult[kRes] = 0;
+                    }
+                    ixResult[kRes]+=vRes;
                 }
-                ixResult[kRes]+=vRes;
+            }
+        } else {
+            const aidData = Object.keys(this.ixData);
+            for (let i = 0; i < aidData.length; i++) {
+                const idData = aidData[i];
+                ixResult[idData] = 1;
             }
         }
 
-        const aResultPair = Object.entries(ixResult);
+        
+        // console.log('result:', aResult[0]);
+        
         if(ixQuery[CmdT.where]){
 
             
@@ -389,77 +414,36 @@ export class IxEngineSys {
                         if(vRow[aCmd[1]] != Number(aCmd[3])){
                             delete ixResult[idData];
                         }
+                    } else if(aCmd[2] == '>'){
+                        if(vRow[aCmd[1]] <= Number(aCmd[3])){
+                            delete ixResult[idData];
+                        }
+                    } else if(aCmd[2] == '>='){
+                        if(vRow[aCmd[1]] < Number(aCmd[3])){
+                            delete ixResult[idData];
+                        }
+                    } else if(aCmd[2] == '<'){
+                        if(vRow[aCmd[1]] >= Number(aCmd[3])){
+                            delete ixResult[idData];
+                        }
+                    } else if(aCmd[2] == '<='){
+                        if(vRow[aCmd[1]] > Number(aCmd[3])){
+                            delete ixResult[idData];
+                        }
                     }
                 }
             }
         }
 
-        let aSortResult = Object.entries(ixResult).sort((a,b) => b[1] - a[1]).map(el => el[0])
+        let aSortResult = Object.entries(ixResult).sort((a,b) => b[1] - a[1]).map(el => Number(el[0]))
 
         if(ixQuery[CmdT.limit]){
             aSortResult = aSortResult.slice(0, Number(ixQuery[CmdT.limit][1]) || 10);
         }
 
-
-        // for (const kRes in result) {
-        //     const vRes = result[kRes];
-
-        //     for (let i = 0; i < vRes.list_eq.length; i++) {
-        //         const idData = vRes.list_eq[i];
-        //         if (!ixResult[idData]){
-        //             ixResult[idData] = 0;
-        //         }
-
-        //         ixResult[idData] += 3;
-        //     }
-
-        //     for (let i = 0; i < vRes.list_first.length; i++) {
-        //         const idData = vRes.list_first[i];
-        //         if (!ixResult[idData]){
-        //             ixResult[idData] = 0;
-        //         }
-
-        //         ixResult[idData] += 2;
-        //     }
-
-        //     for (let i = 0; i < vRes.list_more.length; i++) {
-        //         const idData = vRes.list_more[i];
-        //         if (!ixResult[idData]){
-        //             ixResult[idData] = 0;
-        //         }
-
-        //         ixResult[idData] += 1;
-        //     }
-        // }
-
-        
-
-        // console.log('ixResult:', );
-
-        // const ixSort:Record<string, number[]> = {};
-        // for (const kRes in ixResult) {
-        //     const iVal = ixResult[kRes];
-
-        //     if (!ixSort[iVal]){
-        //         ixSort[iVal] = [];
-        //     }
-
-        //     ixSort[iVal].push(Number(kRes));
-        // }
-
-        // const akSort = Object.keys(ixSort).map((el) => Number(el)).sort((a,b) => a - b);
-        // for (let index = 0; index < array.length; index++) {
-        //     const element = array[index];
-            
-        // }
-
-        // console.log('ixSort:', _.orderBy(Object.entries(ixSort), ['0'],['desc']));
-
-        // const aOut = _.concat(Object.values(ixSort));
-
         console.timeEnd('t');
 
-        // console.log(ixData);
+        // ========================================
 
         const aOutData = [];
         for (let i = 0; i < aSortResult.length; i++) {
@@ -475,6 +459,7 @@ export class IxEngineSys {
 
         console.log('aOutData', aOutData);
 
+        return aSortResult
 
     }
     

@@ -22,25 +22,62 @@ async function run(){
         'username':SchemaT.ix_string,
         'user_fullname':SchemaT.ix_string,
         'user_mobile':SchemaT.ix_string,
-        'consumer_rating':SchemaT.int
+        'consumer_rating':SchemaT.int,
+        'login':SchemaT.ix_enum,
     });
 
-    const aUser = await db('phpbb_users').select({id:'user_id'}, 'username', 'user_fullname', 'user_mobile', 'consumer_rating')
-            .limit(10000)
-            .orderBy('user_id', 'asc');
+    const aUser = await db('phpbb_users')
+        .limit(10000)
+        .orderBy('user_id', 'asc')
+        .select(
+            {id:'user_id'}, 
+            'username', 
+            {login:'username'}, 
+            'user_fullname', 
+            'user_mobile', 
+            'consumer_rating'
+        );
 
     
     console.time('tInsert')
     await mqClientSys.insert('user', aUser);
     console.timeEnd('tInsert')
 
-    console.time('tSelect')
-    await mqClientSys.select('user', [
-        'match username Ольга',
+    console.time('tSelectString')
+    const aidSelect = await mqClientSys.select('user', [
+        'match username ольга',
+        'match username света',
         'where consumer_rating = 3',
         'limit 10'
     ]);
-    console.timeEnd('tSelect')
+    console.timeEnd('tSelectString')
+
+    console.log('aidSelect',aidSelect);
+
+    // console.time('tSelectEnum')
+    // await mqClientSys.select('user', [
+    //     'match login ольга',
+    //     'match username админ',
+    //     'where consumer_rating = 3',
+    //     'limit 10'
+    // ]);
+    // console.timeEnd('tSelectEnum')
+
+    // console.time('tSelectWhere')
+    // await mqClientSys.select('user', [
+    //     'where consumer_rating = 2',
+    //     'limit 10'
+    // ]);
+    // console.timeEnd('tSelectWhere')
+
+    // console.time('tSelectGroup')
+    // await mqClientSys.select('user', [
+    //     'count login',
+    //     'where consumer_rating = 3',
+    //     'group consumer_rating',
+    //     'limit 10'
+    // ]);
+    // console.timeEnd('tSelectGroup')
 
 
     

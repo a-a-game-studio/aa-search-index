@@ -61,7 +61,7 @@ router.ws(QueryT.schema, async (ctx: AAContext) => {
 
     const data = gIxEngineSys.search(ctx.body);
     process.stdout.write('.');
-    // console.log('ask>>>',ctx.body, data)
+    console.log('select>>>', data);
 
     // if(data){
 

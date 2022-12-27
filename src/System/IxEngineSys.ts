@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { CmdT, QueryContextI, SchemaT } from '../interface/CommonI';
+import { IndexationTaskN } from './IndexationTask'
 
 
 /** Система очередей */
@@ -10,8 +11,11 @@ export class IxEngineSys {
     // Данные таблица
     ixData:Record<number, Record<string, any>> = {};
 
+    // Индексы
     ixLetter:Record<string, Record<string, number[]>> = {};
     ixLetterIx:Record<string, Record<string, Record<number, number>>> = {};
+
+    ixEnum:Record<string, Record<string, { list:number[]; ix:Record<number, number>} >> = {};
 
 
     /** Кодирование информации по пользователю */
@@ -49,89 +53,90 @@ export class IxEngineSys {
     find(sText:string, sCol:string):Record<number, number>{
         const aFindText = this.encriptChunk(sText);
         const sTextLow = sText.toLowerCase();
+        const ixFind:Record<number, number> = {}; // Результат
+
 
         console.log('find>>>', sTextLow, sCol);
 
-        const ixLetterCol = this.ixLetter[sCol];
+        if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_string || this.ixSchema[sCol] == SchemaT.ix_text){
 
-        const ixIndex:Record<number, number> = {};
-        for (let c = 0; c < aFindText.length; c++) {
-            const sFindText = aFindText[c];
-            if (ixLetterCol[sFindText]){
-                const aIndex = ixLetterCol[sFindText];
-                // console.log('aIndex', aIndex);
+            const ixLetterCol = this.ixLetter[sCol];
 
-                const ixUniq:Record<number, boolean> = {};
+            const ixIndex:Record<number, number> = {};
+            for (let c = 0; c < aFindText.length; c++) {
+                const sFindText = aFindText[c];
+                if (ixLetterCol[sFindText]){
+                    const aIndex = ixLetterCol[sFindText];
+                    // console.log('aIndex', aIndex);
 
-                for (let i = 0; i < aIndex.length; i++) {
-                    const idData = aIndex[i];
+                    const ixUniq:Record<number, boolean> = {};
 
-                    if (!ixIndex[idData] && c == 0){
-                        ixIndex[idData] = 0;
-                    }
+                    for (let i = 0; i < aIndex.length; i++) {
+                        const idData = aIndex[i];
 
-                    if(!ixUniq[idData]){
-                        if (ixIndex[idData] >= c){
-                            ixIndex[idData]++;
-                            ixUniq[idData] = true;
-                        } else if (ixIndex[idData]) {
-                            console.log('delete', ixIndex[idData]);
-                            delete ixIndex[idData];
+                        if (!ixIndex[idData] && c == 0){
+                            ixIndex[idData] = 0;
                         }
+
+                        if(!ixUniq[idData]){
+                            if (ixIndex[idData] >= c){
+                                ixIndex[idData]++;
+                                ixUniq[idData] = true;
+                            } else if (ixIndex[idData]) {
+                                console.log('delete', ixIndex[idData]);
+                                delete ixIndex[idData];
+                            }
+                        }
+
                     }
+
+                    // console.log(ixIndex);
 
                 }
-
-                // console.log(ixIndex);
-
             }
-        }
 
-        const aIndexSort:number[] = [];
-        for (const k in ixIndex) {
-            const v = ixIndex[k];
-            if (v >= aFindText.length){
-                aIndexSort.push(Number(k));
-            }
-        }
-
-        const aFindLoginRaw = aIndexSort;
-
-        // console.log('aFindLoginRaw', aFindLoginRaw);
-
-        // const aEqLen = []
-        // const aEqLenLow = [];
-        const aMoreLenLowFirst = [];
-        const aMoreLenLow = [];
-        const ixFind:Record<number, number> = {};
-        for (let i = 0; i < aFindLoginRaw.length; i++) {
-            const idFindLoginRaw = aFindLoginRaw[i];
-
-            const sWordLow = this.ixData[idFindLoginRaw][sCol];
-
-            // console.log(sTextLow, sTextLow.length, sWordLow, sWordLow.length);
-
-            if (sTextLow.length == sWordLow.length){
-                if (sTextLow == sWordLow){
-                    if(!ixFind[idFindLoginRaw]){
-                        ixFind[idFindLoginRaw] = 0;
-                    }
-                    ixFind[idFindLoginRaw] += 3;
+            const aIndexSort:number[] = [];
+            for (const k in ixIndex) {
+                const v = ixIndex[k];
+                if (v >= aFindText.length){
+                    aIndexSort.push(Number(k));
                 }
-            } else {
-                if (sWordLow.indexOf(sTextLow) == 0){
-                    if(!ixFind[idFindLoginRaw]){
-                        ixFind[idFindLoginRaw] = 0;
+            }
+
+            const aFindLoginRaw = aIndexSort;
+
+
+            for (let i = 0; i < aFindLoginRaw.length; i++) {
+                const idFindLoginRaw = aFindLoginRaw[i];
+
+                const sWordLow = this.ixData[idFindLoginRaw][sCol];
+
+                // console.log(sTextLow, sTextLow.length, sWordLow, sWordLow.length);
+
+                if (sTextLow.length == sWordLow.length){
+                    if (sTextLow == sWordLow){
+                        if(!ixFind[idFindLoginRaw]){
+                            ixFind[idFindLoginRaw] = 0;
+                        }
+                        ixFind[idFindLoginRaw] += 3;
                     }
-                    ixFind[idFindLoginRaw] += 2;
                 } else {
-                    if(!ixFind[idFindLoginRaw]){
-                        ixFind[idFindLoginRaw] = 0;
+                    if (sWordLow.indexOf(sTextLow) == 0){
+                        if(!ixFind[idFindLoginRaw]){
+                            ixFind[idFindLoginRaw] = 0;
+                        }
+                        ixFind[idFindLoginRaw] += 2;
+                    } else {
+                        if(!ixFind[idFindLoginRaw]){
+                            ixFind[idFindLoginRaw] = 0;
+                        }
+                        ixFind[idFindLoginRaw] += 1;
                     }
-                    ixFind[idFindLoginRaw] += 1;
                 }
-            }
 
+            }
+        } else if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_enum) {
+            this.ixEnum[vRow[sCol]]
         }
 
         // const asFindResult = _.concat(aEqLenLow,aMoreLenLowFirst,aMoreLenLow)
@@ -156,7 +161,8 @@ export class IxEngineSys {
 
         // const ixOldDataChunk:Record<string, Record<string, Record<number, number>>> = {};
 
-        const ixChunkUse:Record<string, Record<string, number>> = {};
+        const ixChunkLetterUse:Record<string, Record<string, number>> = {};
+        const ixChunkEnumUse:Record<string, Record<string, number>> = {};
         
 
         for (let c = 0; c < aData.length; c++) {
@@ -185,11 +191,18 @@ export class IxEngineSys {
                 let vOldVal = null;
 
                 if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_string || this.ixSchema[sCol] == SchemaT.ix_text){
+                    // IX TEXT STRING
                     // Назначить новое значение
                     vOldVal = this.ixData[idRow][sCol];
 
                     vRow[sCol] = vRow[sCol].toLowerCase();
                     this.ixData[idRow][sCol] = vRow[sCol];
+                } else if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_enum) {
+                    const sOldVal = IndexationTaskN.fIxEnum(this, idRow, sCol, vRow[sCol]);
+                    if(sOldVal){
+                        ixChunkEnumUse[sCol]
+                    }
+                    continue;
                 } else {
                     // Назначить новое значение
                     this.ixData[idRow][sCol] = vRow[sCol];
@@ -235,14 +248,14 @@ export class IxEngineSys {
 
                     if(this.ixLetterIx[sCol][sDataChunk][vRow.id]){
 
-                        if(!ixChunkUse[sCol]){
-                            ixChunkUse[sCol] = {};
+                        if(!ixChunkLetterUse[sCol]){
+                            ixChunkLetterUse[sCol] = {};
                         }
 
-                        if(!ixChunkUse[sCol][sDataChunk]){
-                            ixChunkUse[sCol][sDataChunk] = 0;
+                        if(!ixChunkLetterUse[sCol][sDataChunk]){
+                            ixChunkLetterUse[sCol][sDataChunk] = 0;
                         }
-                        ixChunkUse[sCol][sDataChunk]++;
+                        ixChunkLetterUse[sCol][sDataChunk]++;
                         
                     }
 
@@ -264,8 +277,8 @@ export class IxEngineSys {
         }
 
         // const akChunkUse = Object.keys(ixChunkUse);
-        for (const kColUse in ixChunkUse) {
-            const vChunkUse = ixChunkUse[kColUse]
+        for (const kColUse in ixChunkLetterUse) {
+            const vChunkUse = ixChunkLetterUse[kColUse]
             
             for (const kChunkUse in vChunkUse) {
                 this.ixLetter[kColUse][kChunkUse] = Object.values(this.ixLetterIx[kColUse][kChunkUse]);

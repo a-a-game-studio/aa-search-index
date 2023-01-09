@@ -35,7 +35,7 @@ export interface QueryContextI {
     app:string; // Наименование приложения
     ip:string; // Входной IP адрес
     index?:string; // Индекс к которому идет обращение
-    query?:string[]; // Запрос
+    query?:string[][]; // Запрос
     data?:any[]; // Данные
     time?:number; // Время отправки для механизмов очистки
 }

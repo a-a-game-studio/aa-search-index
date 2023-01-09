@@ -327,10 +327,7 @@ export class IxEngineSys {
         const ixQuery:Record<CmdT, any[]> = <any>{};
 
         for (let i = 0; i < query.query.length; i++) {
-            let sQuery = query.query[i];
-            
-            sQuery = sQuery.replace('\s+', ' ');
-            const aQuery = sQuery.split(' ');
+            let aQuery = query.query[i].map(el => el.trim());
 
             const sCmd = aQuery[0];
 

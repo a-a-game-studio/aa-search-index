@@ -8,6 +8,7 @@ import ip from 'ip'
 import { reject } from "lodash";
 import { mWait } from "../Helper/WaitH";
 import { QueryContextI, QueryT, SchemaT } from '../interface/CommonI';
+import { QueyrBuilderSys } from "./QueyrBuilderSys";
 
 
 export class IxClientSys {
@@ -56,6 +57,11 @@ export class IxClientSys {
         nameApp: string, // Наименование приложения
     }){
         this.conf.nameApp = option.nameApp;
+    }
+
+    /** получить построитель запросов */
+    public query(){
+        return new QueyrBuilderSys();
     }
 
      /**
@@ -129,7 +135,7 @@ export class IxClientSys {
     /** Запросить из очереди 
      * cb(data)
     */
-    public select(sIndex:string, cmd:string[]) {
+    public select(sIndex:string, cmd:QueyrBuilderSys):Promise<number[]> {
         return new Promise((resolve, reject) => {
             this.querySys.fInit();
             this.querySys.fActionOk((data:number[]) => {
@@ -143,7 +149,7 @@ export class IxClientSys {
                 app:this.conf.nameApp,
                 ip:ip.address(),
                 index:sIndex,
-                query:cmd
+                query:cmd.getQuery()
             });
         })
     }

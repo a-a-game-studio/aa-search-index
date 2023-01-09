@@ -44,12 +44,12 @@ async function run(){
     console.timeEnd('tInsert')
 
     console.time('tSelectString')
-    const aidSelect = await mqClientSys.select('user', [
-        'match username ольга',
-        'match username света',
-        'where consumer_rating = 3',
-        'limit 10'
-    ]);
+    const aidSelect = await mqClientSys.select('user', mqClientSys.query()
+        .match('username', 'ольга')
+        .match('username', 'света')
+        .where('consumer_rating', '=', String(3))
+        .limit(10)
+    );
     console.timeEnd('tSelectString')
 
     console.log('aidSelect',aidSelect);

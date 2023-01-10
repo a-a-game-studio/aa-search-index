@@ -10,7 +10,7 @@ import { IxClientSys } from "../System/IxClientSys";
 import { SchemaT } from "../interface/CommonI";
 
 // CORE API
-const mqClientSys = new IxClientSys({
+const ixClientSys = new IxClientSys({
     baseURL: 'ws://127.0.0.1:8080',
     nameApp: 'test_client'
 })
@@ -18,7 +18,7 @@ const mqClientSys = new IxClientSys({
 async function run(){
 
     // Установить схему
-    await mqClientSys.schema('user', {
+    await ixClientSys.schema('user', {
         'username':SchemaT.ix_string,
         'user_fullname':SchemaT.ix_string,
         'user_mobile':SchemaT.ix_string,
@@ -40,11 +40,11 @@ async function run(){
 
     
     console.time('tInsert')
-    await mqClientSys.insert('user', aUser);
+    await ixClientSys.insert('user', aUser);
     console.timeEnd('tInsert')
 
     console.time('tSelectString')
-    const aidSelect = await mqClientSys.select('user', mqClientSys.query()
+    const aidSelect = await ixClientSys.select('user', ixClientSys.query()
         .match('username', 'ольга')
         .match('username', 'света')
         .where('consumer_rating', '=', String(3))

@@ -401,12 +401,12 @@ export class IxEngineSys {
                 const idData = Number(kRes);
                 const vRow = this.ixData[idData];
 
-                console.log('WHERE', kRes, idData, vRow);
+                // console.log('WHERE', kRes, idData, vRow);
 
                 for (let i = 0; i < ixQuery[CmdT.where].length; i++) {
                     const aCmd = ixQuery[CmdT.where][i];
 
-                    console.log(aCmd);
+                    // console.log(aCmd);
                     if(aCmd[2] == '='){
                         if(vRow[aCmd[1]] != Number(aCmd[3])){
                             delete ixResult[idData];

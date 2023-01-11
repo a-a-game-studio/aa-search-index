@@ -68,10 +68,10 @@ async function run(){
     
    
     console.time('tSelect')
-    await mqClientSys.select('user', [
-        'match username Ольга',
-        'limit 100'
-    ]);
+    // await mqClientSys.select('user', [
+    //     'match username Ольга',
+    //     'limit 100'
+    // ]);
 
     await mWait(1000);
 

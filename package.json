@@ -1,6 +1,6 @@
 {
   "name": "@a-a-game-studio/aa-server-index",
-  "version": "0.0.14",
+  "version": "0.0.1",
   "description": "Поисковой индекс",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -14,10 +14,8 @@
   "peerDependencies": {},
   "scripts": {
     "build": "./node_modules/.bin/tsc",
-    "watch": "tsc-watch --outDir ./build --onSuccess \"npm run server\"",
-    "server": "node ./build/run.js",
-    "run_test": "./node_modules/.bin/ts-node",
-    "test": "ts-mocha"
+    "watch": "tsc-watch --outDir ./build --onSuccess \"npm run start\"",
+    "start": "node ./build/run.js"
   },
   "dependencies": {
     "@a-a-game-studio/aa-components": "^1.1.45",

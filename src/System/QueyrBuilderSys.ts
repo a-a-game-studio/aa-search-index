@@ -36,6 +36,15 @@ export class QueyrBuilderSys {
     }
 
     /** 
+     * Поиск совпадений по индексу
+    */
+    public in(sCol:string, aVal:string[]|number[]): QueyrBuilderSys {
+        this.aaString.push(['in', sCol, JSON.stringify(aVal)]);
+
+        return this;
+    }
+
+    /** 
      * Фильтрация
     */
     public where(sCol:string, op:OpT,  val:string): QueyrBuilderSys {

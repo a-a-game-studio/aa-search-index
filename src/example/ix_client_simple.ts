@@ -24,19 +24,26 @@ async function run(){
         'user_mobile':SchemaT.ix_string,
         'consumer_rating':SchemaT.int,
         'login':SchemaT.ix_enum,
+        'user_id':SchemaT.ix_enum,
     });
 
     const aUser = await db('phpbb_users')
         .limit(10000)
         .orderBy('user_id', 'asc')
         .select(
-            {id:'user_id'}, 
+            {id:'user_id'},
+            {user_id:'user_id'}, 
             'username', 
             {login:'username'}, 
             'user_fullname', 
             'user_mobile', 
             'consumer_rating'
         );
+
+    for (let i = 0; i < aUser.length; i++) {
+        const vUser = aUser[i];
+        vUser.user_id = String(vUser.user_id);
+    }
 
     
     console.time('tInsert')
@@ -47,6 +54,7 @@ async function run(){
     const aidSelect = await ixClientSys.select('user', ixClientSys.query()
         .match('username', 'ольга')
         .match('username', 'света')
+        .in('user_id', ['156','42152','43119','58448'])
         .where('consumer_rating', '=', String(3))
         .limit(10)
     );

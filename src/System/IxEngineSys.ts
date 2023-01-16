@@ -1,3 +1,4 @@
+
 import _ from "lodash";
 import { CmdT, QueryContextI, SchemaT } from '../interface/CommonI';
 import { IndexationTaskN } from './IndexationTask'
@@ -340,6 +341,12 @@ export class IxEngineSys {
             } else if(sCmd == CmdT.limit){ // LIMIT
                 ixQuery[CmdT.limit] = aQuery;
 
+            } else if(sCmd == CmdT.in){ // WHERE
+                if(!ixQuery[CmdT.in]){
+                    ixQuery[CmdT.in] = [];
+                }
+                ixQuery[CmdT.in].push(aQuery)
+
             } else if(sCmd == CmdT.where){ // WHERE
                 if(!ixQuery[CmdT.where]){
                     ixQuery[CmdT.where] = [];
@@ -391,6 +398,39 @@ export class IxEngineSys {
             }
         }
 
+        // TODO оптимизировать выборка ixResult слишком большая
+        if(ixQuery[CmdT.in]){
+
+            for (let i = 0; i < ixQuery[CmdT.in].length; i++) {
+                const aQuery = ixQuery[CmdT.in][i];
+                try {
+                    aQuery[2] = JSON.parse(aQuery[2])
+                } catch (error) {
+                    aQuery[2] = [];
+                }
+                
+                const sCol = aQuery[1];
+                let aidInRow:number[] = [];
+                
+                console.log(aQuery[2]);
+                for (let j = 0; j < aQuery[2].length; j++) {
+                    const valIn = aQuery[2][j];
+                    aidInRow.push(...this.ixEnum[sCol][valIn].list)
+                }
+
+                const ixInRow = _.keyBy(aidInRow);
+                
+
+                for (const kRes in ixResult) {
+                    const idData = Number(kRes);
+                    
+                    if(!ixInRow[idData]){
+                        delete ixResult[idData];
+                    }
+                }
+            }
+            
+        }
         
         // console.log('result:', aResult[0]);
         

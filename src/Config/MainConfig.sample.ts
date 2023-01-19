@@ -16,8 +16,8 @@ export const dbConf = { // Knex mysql
 /** Общие настройки приложения */
 export const common = {
     env: 'dev', // Тип окружения
-    nameApp: 'mq', // Имя приложения // показываем
+    nameApp: 'search_index', // Имя приложения // показываем
     host: '0.0.0.0', // Внутренний host на котором стартует noda слушается обращение к API
     port: 8080, // порт на котором будет работать нода
-    host_public: 'https://dev.63pokupki.ru', // Публичный host балансер к которому идет обращение с фронта
+    host_public: 'https://dev.search-index.ru', // Публичный host балансер к которому идет обращение с фронта
 }

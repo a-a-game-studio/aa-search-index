@@ -186,6 +186,8 @@ export class IxEngineSys {
                 // console.log('indexation', sCol)
                 
                 if ('id' == sCol){
+                    const sUseEnum = IndexationTaskN.fIxEnum(this, idRow, sCol, String(vRow[sCol]));
+                    // Не перезаписываем старые значения потому что они всегда равны сами себе
                     continue;
                 }
 

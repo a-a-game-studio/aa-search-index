@@ -54,7 +54,7 @@ async function run(){
     const aidSelect = await ixClientSys.select('user', ixClientSys.query()
         .match('username', 'ольга')
         .match('username', 'света')
-        .in('user_id', ['156','42152','43119','58448'])
+        .in('id', ['156','26096','62634','58448'])
         .where('consumer_rating', '=', String(3))
         .limit(10)
     );

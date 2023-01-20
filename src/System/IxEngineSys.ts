@@ -144,6 +144,12 @@ export class IxEngineSys {
                 const idData = aidData[i];
                 ixFind[idData] = 3;
             }
+        } else if(sCol === 'id') {
+            const aidData = this.ixEnum[sCol][sTextLow].list;
+            for (let i = 0; i < aidData.length; i++) {
+                const idData = aidData[i];
+                ixFind[idData] = 3;
+            }
         }
 
         // const asFindResult = _.concat(aEqLenLow,aMoreLenLowFirst,aMoreLenLow)

@@ -210,7 +210,14 @@ export class IxEngineSys {
                 } else if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_enum) {
                     const sUseEnum = IndexationTaskN.fIxEnum(this, idRow, sCol, vRow[sCol]);
                     if(sUseEnum){
-                        ixChunkEnumUse[sCol][sUseEnum];
+
+                        if(!ixChunkEnumUse[sCol]){
+                            ixChunkEnumUse[sCol] = {};
+                        }
+                        if(!ixChunkEnumUse[sCol][sUseEnum]){
+                            ixChunkEnumUse[sCol][sUseEnum] = 0;
+                        }
+                        ixChunkEnumUse[sCol][sUseEnum]++;
                     }
                     continue;
                 } else {

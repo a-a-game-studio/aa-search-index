@@ -34,6 +34,10 @@ export namespace IndexationTaskN {
         ixEngineSys.ixEnum[sCol][sVal].ix[idRow] = idRow;
         ixEngineSys.ixEnum[sCol][sVal].list.push(idRow)
 
+        // Удаляем старое значение
+        if(sCol !== 'id' && sOldVal){
+            delete ixEngineSys.ixEnum[sCol][sOldVal].ix[idRow]
+        }
         return sOldVal;
     }
 }

@@ -19,7 +19,7 @@ async function run(){
 
         // Установить схему
         await ixClientSys.schema('user', {
-            'login': SchemaT.ix_enum,
+            'login': SchemaT.ix_string,
         });
         
         // индексация

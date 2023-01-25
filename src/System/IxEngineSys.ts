@@ -13,8 +13,8 @@ export class IxEngineSys {
     ixData:Record<number, Record<string, any>> = {};
 
     // Индексы
-    ixLetter:Record<string, Record<string, number[]>> = {};
-    ixLetterIx:Record<string, Record<string, Record<number, number>>> = {};
+    ixLetter:Record<string, Record<string, { list:number[]; ix:Record<number, number> }>> = {};
+    // ixLetterIx:Record<string, Record<string, Record<number, number>>> = {};
 
     ixEnum:Record<string, Record<string, { list:number[]; ix:Record<number, number>} >> = {};
 
@@ -69,7 +69,7 @@ export class IxEngineSys {
             for (let c = 0; c < aFindText.length; c++) {
                 const sFindText = aFindText[c];
                 if (ixLetterCol[sFindText]){
-                    const aIndex = ixLetterCol[sFindText];
+                    const aIndex = ixLetterCol[sFindText].list;
                     // console.log('aIndex', aIndex);
 
                     const ixUniq:Record<number, boolean> = {};
@@ -237,13 +237,13 @@ export class IxEngineSys {
                     const aOldChunk = this.encriptChunk(vOldVal);
                     const aDelChunk = _.difference(aOldChunk, aDataChunk);
 
-                    const vLetterCol = this.ixLetterIx[sCol];
+                    const vLetterCol = this.ixLetter[sCol];
                     for (let i = 0; i < aDelChunk.length; i++) {
                         const sOldChunk = aDelChunk[i];
                         
-                        if(vLetterCol && vLetterCol[sOldChunk] && vLetterCol[sOldChunk][vRow.id]){
+                        if(vLetterCol && vLetterCol[sOldChunk] && vLetterCol[sOldChunk].ix[vRow.id]){
 
-                            delete vLetterCol[sOldChunk][vRow.id];
+                            delete vLetterCol[sOldChunk].ix[vRow.id];
 
                             // Помечаем чанк как использованный
                             if(!ixChunkLetterUse[sCol]){
@@ -262,19 +262,17 @@ export class IxEngineSys {
                 for (let i = 0; i < aDataChunk.length; i++) {
                     const sDataChunk = aDataChunk[i];
 
-                    if (!this.ixLetterIx[sCol]){
+                    if (!this.ixLetter[sCol]){
                         this.ixLetter[sCol] = {};
-                        this.ixLetterIx[sCol] = {};
                     }
 
-                    if (!this.ixLetterIx[sCol][sDataChunk]){
-                        this.ixLetter[sCol][sDataChunk] = []; // Индекс
-                        this.ixLetterIx[sCol][sDataChunk] = {}; // Индекс
+                    if (!this.ixLetter[sCol][sDataChunk]){
+                        this.ixLetter[sCol][sDataChunk] = { list:[], ix:{} }; // Индекс
                     }
 
                     // console.log(this.ixLetterIx[sCol][sDataChunk][vRow.id])
 
-                    if(this.ixLetterIx[sCol][sDataChunk][vRow.id]){
+                    if(this.ixLetter[sCol][sDataChunk].ix[vRow.id]){
 
                         if(!ixChunkLetterUse[sCol]){
                             ixChunkLetterUse[sCol] = {};
@@ -287,8 +285,8 @@ export class IxEngineSys {
                         
                     }
 
-                    this.ixLetter[sCol][sDataChunk].push(vRow.id)
-                    this.ixLetterIx[sCol][sDataChunk][vRow.id] = vRow.id;
+                    this.ixLetter[sCol][sDataChunk].list.push(vRow.id)
+                    this.ixLetter[sCol][sDataChunk].ix[vRow.id] = vRow.id;
 
                     this.cnt++;
                     if(this.cntCopy++ > 100000){
@@ -309,10 +307,10 @@ export class IxEngineSys {
             const vChunkUse = ixChunkLetterUse[kColUse]
             
             for (const kChunkUse in vChunkUse) {
-                this.ixLetter[kColUse][kChunkUse] = Object.values(this.ixLetterIx[kColUse][kChunkUse]);
+                this.ixLetter[kColUse][kChunkUse].list = Object.values(this.ixLetter[kColUse][kChunkUse].ix);
                 this.cnt++;
 
-                this.cntCopy += this.ixLetter[kColUse][kChunkUse].length;
+                this.cntCopy += this.ixLetter[kColUse][kChunkUse].list.length;
 
                 console.log('===this.ixLetter',this.cnt, this.cntCopy);
 
@@ -341,8 +339,10 @@ export class IxEngineSys {
         }
         process.stdout.write('.')
 
-        // console.log('this.ixLetter>>',this.ixLetter);
-        // console.log('this.ixLetterIx>>',this.ixLetterIx);
+        // // Проверка содержимого индекса
+        // for (const kColUse in this.ixLetter) {
+        //     console.log('this.ixLetter:',kColUse,'>>',this.ixLetter[kColUse]);
+        // }
     }
 
     /** Получить количество записей по запросу */

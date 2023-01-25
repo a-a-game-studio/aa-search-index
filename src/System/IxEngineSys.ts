@@ -242,7 +242,18 @@ export class IxEngineSys {
                         const sOldChunk = aDelChunk[i];
                         
                         if(vLetterCol && vLetterCol[sOldChunk] && vLetterCol[sOldChunk][vRow.id]){
+
                             delete vLetterCol[sOldChunk][vRow.id];
+
+                            // Помечаем чанк как использованный
+                            if(!ixChunkLetterUse[sCol]){
+                                ixChunkLetterUse[sCol] = {};
+                            }
+    
+                            if(!ixChunkLetterUse[sCol][sOldChunk]){
+                                ixChunkLetterUse[sCol][sOldChunk] = 0;
+                            }
+                            ixChunkLetterUse[sCol][sOldChunk]++;
                         }
                     }
                     
@@ -303,7 +314,7 @@ export class IxEngineSys {
 
                 this.cntCopy += this.ixLetter[kColUse][kChunkUse].length;
 
-                console.log('this.ixLetter',this.cnt, this.cntCopy);
+                console.log('===this.ixLetter',this.cnt, this.cntCopy);
 
                 if(this.cnt % 10000 == 0){
                     this.cntCopy = 0;
@@ -330,7 +341,8 @@ export class IxEngineSys {
         }
         process.stdout.write('.')
 
-        
+        // console.log('this.ixLetter>>',this.ixLetter);
+        // console.log('this.ixLetterIx>>',this.ixLetterIx);
     }
 
     /** Получить количество записей по запросу */

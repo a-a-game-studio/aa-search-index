@@ -86,7 +86,7 @@ export class IxEngineSys {
                                 ixIndex[idData]++;
                                 ixUniq[idData] = true;
                             } else if (ixIndex[idData]) {
-                                console.log('delete', ixIndex[idData]);
+                                // console.log('delete', ixIndex[idData]);
                                 delete ixIndex[idData];
                             }
                         }

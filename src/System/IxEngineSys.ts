@@ -442,7 +442,11 @@ export class IxEngineSys {
                 console.log(aQuery[2]);
                 for (let j = 0; j < aQuery[2].length; j++) {
                     const valIn = aQuery[2][j];
-                    aidInRow.push(...this.ixEnum[sCol][valIn].list)
+
+                    // Проверяем наличие значения
+                    if(this.ixEnum[sCol][valIn]){
+                        aidInRow.push(...this.ixEnum[sCol][valIn].list)
+                    }
                 }
 
                 const ixInRow = _.keyBy(aidInRow);

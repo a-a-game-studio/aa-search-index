@@ -2,6 +2,7 @@
 import _ from "lodash";
 import { CmdT, QueryContextI, SchemaT } from '../interface/CommonI';
 import { IndexationTaskN } from './IndexationTask'
+import * as conf from '../Config/MainConfig'
 
 
 /** Система очередей */
@@ -525,7 +526,9 @@ export class IxEngineSys {
             }
         }
 
-        console.log('aOutData', aOutData);
+        if(conf.common.env === 'dev'){
+            console.log('aOutData', aOutData);
+        }
 
         return aSortResult
 

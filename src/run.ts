@@ -34,7 +34,12 @@ const router = new AARoute();
 router.ws(QueryT.schema, async (ctx: AAContext) => {
 
     console.log('QueryT.schema');
-    gIxEngineSys.fSchema(ctx.body.data);
+
+    try {
+        gIxEngineSys.fSchema(ctx.body.data);
+    } catch(e){
+        console.log('QueryT.schema>>>', e)
+    }
 
     return faSend(ctx, null);
     
@@ -47,7 +52,12 @@ router.ws(QueryT.schema, async (ctx: AAContext) => {
  router.ws(QueryT.insert, async (ctx: AAContext) => {
 
     const auidMsg:string[] = [];
-    gIxEngineSys.fIndexation(ctx.body.data);
+
+    try {
+        gIxEngineSys.fIndexation(ctx.body.data);
+    } catch(e){
+        console.log('QueryT.insert>>>', e)
+    }
 
     return faSend(ctx, auidMsg);
     
@@ -59,9 +69,14 @@ router.ws(QueryT.schema, async (ctx: AAContext) => {
  */
  router.ws(QueryT.select, async (ctx: AAContext) => {
 
-    const data = gIxEngineSys.search(ctx.body);
+    let data:number[] = [];
+    try { 
+        data = gIxEngineSys.search(ctx.body);
+    } catch(e){
+        console.log('QueryT.select>>>', e)
+    }
     process.stdout.write('.');
-    console.log('select>>>', data);
+    // console.log('select>>>', data);
 
     // if(data){
 
@@ -77,7 +92,13 @@ router.ws(QueryT.schema, async (ctx: AAContext) => {
  */
  router.ws(QueryT.count, async (ctx: AAContext) => {
 
-    const data = gIxEngineSys.count(ctx.body.queue);
+    let data:number = 0;
+    try {
+        data = gIxEngineSys.count(ctx.body.queue);
+    } catch(e){
+        console.log('QueryT.count>>>',e);
+    }
+    process.stdout.write('.');
 
     // if(data){
         return faSend(ctx, data);

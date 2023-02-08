@@ -347,7 +347,8 @@ export class IxEngineSys {
     }
 
     /** Получить количество записей по запросу */
-    public async count(query:QueryContextI) {
+    public count(query:QueryContextI):number {
+        return Object.keys(this.ixData).length;
     }
 
     /** run */

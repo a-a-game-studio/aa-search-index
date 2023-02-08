@@ -421,6 +421,39 @@ export class IxEngineSys {
                     ixResult[kRes]+=vRes;
                 }
             }
+        } else if(ixQuery[CmdT.in]){ // Если match нет - мы берем выборку по id которые прямо указаны
+            for (let i = 0; i < ixQuery[CmdT.in].length; i++) {
+                const aQuery = ixQuery[CmdT.in][i];
+                try {
+                    aQuery[2] = JSON.parse(aQuery[2])
+                } catch (error) {
+                    aQuery[2] = [];
+                }
+                
+                const sCol = aQuery[1];
+                let aidInRow:number[] = [];
+                
+                console.log(aQuery[2]);
+                for (let j = 0; j < aQuery[2].length; j++) {
+                    const valIn = aQuery[2][j];
+
+                    // Проверяем наличие значения
+                    if(this.ixEnum[sCol][valIn]){
+                        aidInRow.push(...this.ixEnum[sCol][valIn].list)
+                    }
+                }
+
+                const ixInRow = _.keyBy(aidInRow);
+                
+
+                for (const kRes in ixInRow) {
+                    const idData = Number(kRes);
+                    
+                    if(!ixResult[idData]){
+                        ixResult[idData] = 1;
+                    }
+                }
+            }
         } else {
             const aidData = Object.keys(this.ixData);
             for (let i = 0; i < aidData.length; i++) {
@@ -429,8 +462,8 @@ export class IxEngineSys {
             }
         }
 
-        // TODO оптимизировать выборка ixResult слишком большая
-        if(ixQuery[CmdT.in]){
+        // Обработка выборки по IN после match если он есть
+        if(ixQuery[CmdT.in] && ixQuery[CmdT.match]){
 
             for (let i = 0; i < ixQuery[CmdT.in].length; i++) {
                 const aQuery = ixQuery[CmdT.in][i];

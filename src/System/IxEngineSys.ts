@@ -58,7 +58,7 @@ export class IxEngineSys {
         const ixFind:Record<number, number> = {}; // Результат
 
 
-        console.log('find>>>', sTextLow, sCol);
+        // console.log('find>>>', sTextLow, sCol);
 
         if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_string || this.ixSchema[sCol] == SchemaT.ix_text){
 
@@ -390,13 +390,15 @@ export class IxEngineSys {
             }
         }
 
-        console.log('ixQuery:',ixQuery);
+        if(conf.common.env === 'dev'){
+            console.log('ixQuery:',ixQuery);
+        }
         
 
         const aResult:Record<number, number>[] = [];
         const ixResult:Record<string, number> = {};
 
-        console.time('t');
+        // console.time('t');
 
         if(ixQuery[CmdT.match]){
             for (let i = 0; i < ixQuery[CmdT.match].length; i++) {
@@ -511,7 +513,7 @@ export class IxEngineSys {
             aSortResult = aSortResult.slice(0, Number(ixQuery[CmdT.limit][1]) || 10);
         }
 
-        console.timeEnd('t');
+        // console.timeEnd('t');
 
         // ========================================
 

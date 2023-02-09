@@ -1,3 +1,4 @@
+import { truncate } from "lodash";
 
 export enum QueryT {
     connect = '/connect', // Сообщение о соединении
@@ -6,7 +7,8 @@ export enum QueryT {
     insert = '/insert', // Отправить сообщение
     select = '/select', // Получить сообщение
     count = '/count', // Количество сообщений
-    info = '/info' // Информация по очереди
+    info = '/info', // Информация по очереди
+    truncate = '/truncate', // Количество сообщений
 }
 
 export enum CmdT {

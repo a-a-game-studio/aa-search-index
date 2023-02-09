@@ -64,6 +64,9 @@ async function run(){
 
     console.log('aidSelect',aidSelect);
 
+    // Удаление записей
+    // await ixClientSys.truncate('user');
+
     // console.time('tSelectEnum')
     // await mqClientSys.select('user', [
     //     'match login ольга',

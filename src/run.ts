@@ -109,6 +109,25 @@ router.ws(QueryT.schema, async (ctx: AAContext) => {
 });
 
 /**
+ * Очистка индекса
+ */
+router.ws(QueryT.truncate, async (ctx: AAContext) => {
+
+    let bTruncate = false;
+    try {
+        gIxEngineSys.truncate();
+        bTruncate = true;
+    } catch(e){
+        bTruncate = false;
+        console.log('QueryT.truncate>>>',e);
+    }
+    process.stdout.write('.');
+    
+    return faSend(ctx, true);
+
+});
+
+/**
  * Количество сообщений
  */
  router.ws(QueryT.connect, async (ctx: AAContext) => {

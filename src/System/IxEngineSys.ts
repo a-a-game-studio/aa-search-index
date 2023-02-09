@@ -351,6 +351,13 @@ export class IxEngineSys {
         return Object.keys(this.ixData).length;
     }
 
+    /** Очистка индекса */
+    public truncate() {
+        this.ixData = {};
+        this.ixLetter = {};
+        this.ixEnum = {};
+    }
+
     /** run */
     public search(query:QueryContextI) {
 

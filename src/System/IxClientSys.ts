@@ -139,7 +139,7 @@ export class IxClientSys {
         return new Promise((resolve, reject) => {
             this.querySys.fInit();
             this.querySys.fActionOk((data:number[]) => {
-                console.log(data);
+                // console.log(data);
                 resolve(data);
             });
             this.querySys.fActionErr((err:any) => {
@@ -151,23 +151,28 @@ export class IxClientSys {
                 index:sIndex,
                 query:cmd.getQuery()
             });
-        })
+        });
     }
 
     /** 
      * Количество сообщений в очереди
     */
-    public count(sQueue:string, cb:Function): void {
-        this.querySys.fInit();
-        this.querySys.fActionOk(cb);
-        this.querySys.fActionErr((err:any) => {
-            console.error(err);
-        });
-        this.querySys.fSend(QueryT.count, {
-            app:this.conf.nameApp,
-            ip:ip.address(),
-            queue:sQueue
-        });
+    public count(sQueue:string): Promise<number> {
+        return new Promise((resolve, reject) => {
+            this.querySys.fInit();
+            this.querySys.fActionOk((data:number) => {
+                // console.log(data);
+                resolve(data);
+            });
+            this.querySys.fActionErr((err:any) => {
+                console.error(err);
+            });
+            this.querySys.fSend(QueryT.count, {
+                app:this.conf.nameApp,
+                ip:ip.address(),
+                queue:sQueue
+            });
+        })
     }
 
     /** 

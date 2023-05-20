@@ -9,11 +9,11 @@ var os = require('os');
 
 async function run(){
 
-    const ix:Record<number, number> = {}
-    for (let i = 0; i < 100000000; i++) {
-        ix[i] = i;
+    // const ix:Record<number, number> = {}
+    // for (let i = 0; i < 100000000; i++) {
+    //     ix[i] = i;
         
-    }
+    // }
     
     const aa:Uint32Array[] = [];
     let aTestData = new Uint32Array(1000000);
@@ -24,8 +24,8 @@ async function run(){
     
         aTestData = new Uint32Array(1000000);
 
-        aTestData[0] = 1000;
-        for (let i = 1; i < 1000; i++) {
+        aTestData[0] = 100000;
+        for (let i = 1; i < 100000; i++) {
             // const i1 = Number(i|i+1|i+2|i+3);
             aTestData[i] = i;
         }
@@ -41,7 +41,7 @@ async function run(){
 
 
     // const buf4 = Buffer.from(aTestData);
-    const a32 = new Uint32Array(aTestData);
+    const a32 = new Uint32Array(aTestData, 0, aTestData.length*2);
     
     const a32New = new Uint32Array(aTestData)
     console.time('t1')
@@ -53,7 +53,7 @@ async function run(){
     console.time('t2')
     for (let i = 0; i < aTestData[0]; i++) {
 
-        const i1 = ix[i];
+        const i1 = a32[i];
         a32New[i1] = i1;
         console.log(i1);
     }

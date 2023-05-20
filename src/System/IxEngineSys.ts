@@ -14,10 +14,10 @@ export class IxEngineSys {
     ixData:Record<number, Record<string, any>> = {};
 
     // Индексы
-    ixLetter:Record<string, Record<string, { list:number[]; ix:Record<number, number> }>> = {};
+    ixLetter:Record<string, Record<string, Uint32Array>> = {};
     // ixLetterIx:Record<string, Record<string, Record<number, number>>> = {};
 
-    ixEnum:Record<string, Record<string, { list:number[]; ix:Record<number, number>} >> = {};
+    ixEnum:Record<string, Record<string, Uint32Array>> = {};
 
 
     /** Кодирование информации по пользователю */
@@ -70,7 +70,7 @@ export class IxEngineSys {
             for (let c = 0; c < aFindText.length; c++) {
                 const sFindText = aFindText[c];
                 if (ixLetterCol[sFindText]){
-                    const aIndex = ixLetterCol[sFindText].list;
+                    const aIndex = ixLetterCol[sFindText];
                     // console.log('aIndex', aIndex);
 
                     const ixUniq:Record<number, boolean> = {};
@@ -112,6 +112,7 @@ export class IxEngineSys {
 
             for (let i = 0; i < aFindLoginRaw.length; i++) {
                 const idFindLoginRaw = aFindLoginRaw[i];
+                if(!idFindLoginRaw) continue;
 
                 const sWordLow = this.ixData[idFindLoginRaw][sCol];
 
@@ -140,16 +141,20 @@ export class IxEngineSys {
 
             }
         } else if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_enum) {
-            const aidData = this.ixEnum[sCol][sTextLow]?.list || [];
-            for (let i = 0; i < aidData.length; i++) {
-                const idData = aidData[i];
-                ixFind[idData] = 3;
+            const aidData = this.ixEnum[sCol][sTextLow];
+            if(aidData){
+                for (let i = 4; i < aidData[0]; i++) {
+                    const idData = aidData[i];
+                    ixFind[idData] = 3;
+                }
             }
         } else if(sCol === 'id') {
-            const aidData = this.ixEnum[sCol][sTextLow]?.list || [];
-            for (let i = 0; i < aidData.length; i++) {
-                const idData = aidData[i];
-                ixFind[idData] = 3;
+            const aidData = this.ixEnum[sCol][sTextLow];
+            if(aidData){
+                for (let i = 4; i < aidData[0]; i++) {
+                    const idData = aidData[i];
+                    ixFind[idData] = 3;
+                }
             }
         }
 
@@ -234,46 +239,48 @@ export class IxEngineSys {
 
                 const aDataChunk = this.encriptChunk(vRow[sCol]);
 
-                if(vOldVal){ // Если есть старое значение чистим лишнее
-                    const aOldChunk = this.encriptChunk(vOldVal);
-                    const aDelChunk = _.difference(aOldChunk, aDataChunk);
+                // TODO временно отключено
+                // if(vOldVal){ // Если есть старое значение чистим лишнее
+                //     const aOldChunk = this.encriptChunk(vOldVal);
+                //     const aDelChunk = _.difference(aOldChunk, aDataChunk);
 
-                    const vLetterCol = this.ixLetter[sCol];
-                    for (let i = 0; i < aDelChunk.length; i++) {
-                        const sOldChunk = aDelChunk[i];
+                //     const vLetterCol = this.ixLetter[sCol];
+                //     for (let i = 0; i < aDelChunk.length; i++) {
+                //         const sOldChunk = aDelChunk[i];
                         
-                        if(vLetterCol && vLetterCol[sOldChunk] && vLetterCol[sOldChunk].ix[vRow.id]){
+                //         if(vLetterCol && vLetterCol[sOldChunk] && vLetterCol[sOldChunk].ix[vRow.id]){
 
-                            delete vLetterCol[sOldChunk].ix[vRow.id];
+                //             delete vLetterCol[sOldChunk].ix[vRow.id];
 
-                            // Помечаем чанк как использованный
-                            if(!ixChunkLetterUse[sCol]){
-                                ixChunkLetterUse[sCol] = {};
-                            }
+                //             // Помечаем чанк как использованный
+                //             if(!ixChunkLetterUse[sCol]){
+                //                 ixChunkLetterUse[sCol] = {};
+                //             }
     
-                            if(!ixChunkLetterUse[sCol][sOldChunk]){
-                                ixChunkLetterUse[sCol][sOldChunk] = 0;
-                            }
-                            ixChunkLetterUse[sCol][sOldChunk]++;
-                        }
-                    }
+                //             if(!ixChunkLetterUse[sCol][sOldChunk]){
+                //                 ixChunkLetterUse[sCol][sOldChunk] = 0;
+                //             }
+                //             ixChunkLetterUse[sCol][sOldChunk]++;
+                //         }
+                //     }
                     
-                }
+                // }
 
                 for (let i = 0; i < aDataChunk.length; i++) {
                     const sDataChunk = aDataChunk[i];
+                    
 
                     if (!this.ixLetter[sCol]){
                         this.ixLetter[sCol] = {};
                     }
 
                     if (!this.ixLetter[sCol][sDataChunk]){
-                        this.ixLetter[sCol][sDataChunk] = { list:[], ix:{} }; // Индекс
+                        this.ixLetter[sCol][sDataChunk] = new Uint32Array(1000); // Индекс
                     }
 
                     // console.log(this.ixLetterIx[sCol][sDataChunk][vRow.id])
 
-                    if(this.ixLetter[sCol][sDataChunk].ix[vRow.id]){
+                    // if(this.ixLetter[sCol][sDataChunk].ix[vRow.id]){
 
                         if(!ixChunkLetterUse[sCol]){
                             ixChunkLetterUse[sCol] = {};
@@ -284,10 +291,17 @@ export class IxEngineSys {
                         }
                         ixChunkLetterUse[sCol][sDataChunk]++;
                         
-                    }
+                    // }
 
-                    this.ixLetter[sCol][sDataChunk].list.push(vRow.id)
-                    this.ixLetter[sCol][sDataChunk].ix[vRow.id] = vRow.id;
+                    // this.ixLetter[sCol][sDataChunk].list.push(vRow.id)
+                    // this.ixLetter[sCol][sDataChunk].ix[vRow.id] = vRow.id;
+
+                    const iDataLength = this.ixLetter[sCol][sDataChunk][0]; // текущее количество данных
+                    if(iDataLength + 4 > this.ixLetter[sCol][sDataChunk].length){
+                        this.ixLetter[sCol][sDataChunk] = new Uint32Array(this.ixLetter[sCol][sDataChunk], 0, this.ixLetter[sCol][sDataChunk].length * 2)
+                    }
+                    this.ixLetter[sCol][sDataChunk][iDataLength+4] = vRow.id;
+                    this.ixLetter[sCol][sDataChunk][0]++;
 
                     this.cnt++;
                     if(this.cntCopy++ > 100000){
@@ -304,46 +318,59 @@ export class IxEngineSys {
         }
 
         // const akChunkUse = Object.keys(ixChunkUse);
-        for (const kColUse in ixChunkLetterUse) {
-            const vChunkUse = ixChunkLetterUse[kColUse]
+        // for (const kColUse in ixChunkLetterUse) {
+        //     const vChunkUse = ixChunkLetterUse[kColUse]
             
-            for (const kChunkUse in vChunkUse) {
-                this.ixLetter[kColUse][kChunkUse].list = Object.values(this.ixLetter[kColUse][kChunkUse].ix);
-                this.cnt++;
+        //     for (const kChunkUse in vChunkUse) {
+        //         this.ixLetter[kColUse][kChunkUse].list = Object.values(this.ixLetter[kColUse][kChunkUse].ix);
+        //         this.cnt++;
 
-                this.cntCopy += this.ixLetter[kColUse][kChunkUse].list.length;
+        //         this.cntCopy += this.ixLetter[kColUse][kChunkUse].list.length;
 
-                console.log('===this.ixLetter',this.cnt, this.cntCopy);
+        //         console.log('===this.ixLetter',this.cnt, this.cntCopy);
 
-                if(this.cnt % 10000 == 0){
-                    this.cntCopy = 0;
-                }
+        //         if(this.cnt % 10000 == 0){
+        //             this.cntCopy = 0;
+        //         }
                 
-            }
-        }
-        for (const kColUse in ixChunkEnumUse) {
-            const vEnumUse = ixChunkEnumUse[kColUse]
+        //     }
+        // }
+        // for (const kColUse in ixChunkEnumUse) {
+        //     const vEnumUse = ixChunkEnumUse[kColUse]
             
-            for (const kEnumUse in vEnumUse) {
-                this.ixEnum[kColUse][kEnumUse].list = Object.values(this.ixEnum[kColUse][kEnumUse].ix);
-                this.cnt++;
+        //     for (const kEnumUse in vEnumUse) {
+        //         this.ixEnum[kColUse][kEnumUse].list = Object.values(this.ixEnum[kColUse][kEnumUse].ix);
+        //         this.cnt++;
 
-                this.cntCopy += this.ixEnum[kColUse][kEnumUse].list.length;
+        //         this.cntCopy += this.ixEnum[kColUse][kEnumUse].list.length;
 
-                console.log('this.ixEnum',this.cnt, this.cntCopy);
+        //         console.log('this.ixEnum',this.cnt, this.cntCopy);
 
-                if(this.cnt % 10000 == 0){
-                    this.cntCopy = 0;
-                }
+        //         if(this.cnt % 10000 == 0){
+        //             this.cntCopy = 0;
+        //         }
                 
-            }
-        }
+        //     }
+        // }
         process.stdout.write('.')
 
         // // Проверка содержимого индекса
         // for (const kColUse in this.ixLetter) {
         //     console.log('this.ixLetter:',kColUse,'>>',this.ixLetter[kColUse]);
         // }
+
+
+        const memoryData = process.memoryUsage();
+
+        const formatMemoryUsage = (data:any) => `${Math.round(data / 1024 / 1024 * 100) / 100} MB`;
+
+        console.log('==============================')
+        console.log(`${formatMemoryUsage(memoryData.rss)} -> Resident Set Size - total memory allocated for the process execution`),
+        console.log(`${formatMemoryUsage(memoryData.heapTotal)} -> total size of the allocated heap`),
+        console.log(`${formatMemoryUsage(memoryData.heapUsed)} -> actual memory used during the execution`),
+        console.log(`${formatMemoryUsage(memoryData.external)} -> V8 external memory`);
+        console.log(Object.keys(this.ixData).length);
+        console.log('==============================')
     }
 
     /** Получить количество записей по запросу */
@@ -446,7 +473,7 @@ export class IxEngineSys {
 
                     // Проверяем наличие значения
                     if(this.ixEnum[sCol][valIn]){
-                        aidInRow.push(...this.ixEnum[sCol][valIn].list)
+                        aidInRow.push(...this.ixEnum[sCol][valIn])
                     }
                 }
 
@@ -489,7 +516,7 @@ export class IxEngineSys {
 
                     // Проверяем наличие значения
                     if(this.ixEnum[sCol][valIn]){
-                        aidInRow.push(...this.ixEnum[sCol][valIn].list)
+                        aidInRow.push(...this.ixEnum[sCol][valIn])
                     }
                 }
 
@@ -572,6 +599,14 @@ export class IxEngineSys {
         if(conf.common.env === 'dev'){
             console.log('aOutData', aOutData);
         }
+
+        const memoryData = process.memoryUsage();
+
+        const formatMemoryUsage = (data:any) => `${Math.round(data / 1024 / 1024 * 100) / 100} MB`;
+        console.log(`${formatMemoryUsage(memoryData.rss)} -> Resident Set Size - total memory allocated for the process execution`),
+        console.log(`${formatMemoryUsage(memoryData.heapTotal)} -> total size of the allocated heap`),
+        console.log(`${formatMemoryUsage(memoryData.heapUsed)} -> actual memory used during the execution`),
+        console.log(`${formatMemoryUsage(memoryData.external)} -> V8 external memory`);
 
         return aSortResult
 

@@ -11,7 +11,7 @@ import { SchemaT } from "../interface/CommonI";
 
 // CORE API
 const ixClientSys = new IxClientSys({
-    baseURL: 'ws://127.0.0.1:8080',
+    baseURL: 'ws://127.0.0.1:8088',
     nameApp: 'test_client'
 })
 
@@ -28,7 +28,7 @@ async function run(){
     });
 
     const aUser = await db('phpbb_users')
-        .limit(10000)
+        .limit(1000000)
         .orderBy('user_id', 'asc')
         .select(
             {id:'user_id'},

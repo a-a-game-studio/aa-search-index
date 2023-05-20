@@ -10,7 +10,7 @@ import { IxClientSys } from "../System/IxClientSys";
 
 // CORE API
 const mqClientSys = new IxClientSys({
-    baseURL: 'ws://127.0.0.1:8080',
+    baseURL: 'ws://127.0.0.1:8088',
     nameApp: 'test_client'
 })
 
@@ -46,7 +46,7 @@ async function run(){
     //     'limit 100'
     // ]);
 
-    const iPack = 100000;
+    const iPack = 1000000;
     const iOffset = 500000000;
 
 

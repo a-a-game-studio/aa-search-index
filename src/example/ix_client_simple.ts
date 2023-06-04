@@ -28,7 +28,7 @@ async function run(){
     });
 
     const aUser = await db('phpbb_users')
-        .limit(1000000)
+        .limit(10000)
         .orderBy('user_id', 'asc')
         .select(
             {id:'user_id'},
@@ -45,7 +45,7 @@ async function run(){
         vUser.user_id = String(vUser.user_id);
     }
 
-    
+    console.log('INSERT START');
     console.time('tInsert')
     await ixClientSys.insert('user', aUser);
     console.timeEnd('tInsert')

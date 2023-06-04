@@ -11,7 +11,7 @@ import { SchemaT } from "../interface/CommonI";
 
 // CORE API
 const ixClientSys = new IxClientSys({
-    baseURL: 'ws://127.0.0.1:8080',
+    baseURL: 'ws://127.0.0.1:8088',
     nameApp: 'test_client'
 })
 
@@ -31,27 +31,47 @@ async function run(){
             id: 2,
             login: 'петя',
         }]);
-    
+
         // смена логина
         await ixClientSys.insert('user', [{
-            id: 1,
+            id: 2,
             login: 'вася',
+        }]);
+        await ixClientSys.insert('user', [{
+            id: 2,
+            login: 'петя',
+        }]);
+        await ixClientSys.insert('user', [{
+            id: 2,
+            login: 'петруша',
+        }]);
+        await ixClientSys.insert('user', [{
+            id: 2,
+            login: 'петергов',
+        }]);
+        await ixClientSys.insert('user', [{
+            id: 2,
+            login: 'пятерка',
+        }]);
+        await ixClientSys.insert('user', [{
+            id: 2,
+            login: 'петя',
         }]);
     
         // находит 1 по 'петя'
-        const aidSelect1 = await ixClientSys.select('user', ixClientSys.query()
-            .match('login', 'петя')
-            .match('login', 'вася')
-            .limit(10)
-        );
-        console.log('aidSelect',aidSelect1);
+        // const aidSelect1 = await ixClientSys.select('user', ixClientSys.query()
+        //     .match('login', 'петя')
+        //     .match('login', 'вася')
+        //     .limit(10)
+        // );
+        // console.log('aidSelect1',aidSelect1);
     
         // находит 1 по 'вася'
         const aidSelect2 = await ixClientSys.select('user', ixClientSys.query()
-            .match('login', 'вася')
+            .match('login', 'петя')
             .limit(10)
         );
-        console.log('aidSelect',aidSelect2);
+        console.log('aidSelect2',aidSelect2);
     
 
 

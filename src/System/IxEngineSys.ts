@@ -3,6 +3,7 @@ import _ from "lodash";
 import { CmdT, QueryContextI, SchemaT } from '../interface/CommonI';
 import { IndexationTaskN } from './IndexationTask'
 import * as conf from '../Config/MainConfig'
+import e from "express";
 
 
 /** Система очередей */
@@ -75,11 +76,16 @@ export class IxEngineSys {
 
                     const ixUniq:Record<number, boolean> = {};
 
-                    for (let i = 0; i < aIndex.length; i++) {
-                        const idData = aIndex[i];
+                    // console.log('<<<1>>>',sFindText, aIndex[0], aIndex)
+
+                    for (let i = 0; i < aIndex[0]; i++) {
+                        const idData = aIndex[i+4];
+
+                        // console.log('>>>', c,idData)
 
                         if (!ixIndex[idData] && c == 0){
                             ixIndex[idData] = 0;
+                            // console.log('>>>',aIndex)
                         }
 
                         if(!ixUniq[idData]){
@@ -176,8 +182,8 @@ export class IxEngineSys {
     /** Индексация */
     fIndexation(aData:any[]){
 
-        const ixChunkLetterUse:Record<string, Record<string, number>> = {};
-        const ixChunkEnumUse:Record<string, Record<string, number>> = {};
+        const ixChunkLetterUse:Record<string, Record<string, number[]>> = {};
+        const ixEnumUse:Record<string, Record<string, number[]>> = {};
         
 
         for (let c = 0; c < aData.length; c++) {
@@ -217,13 +223,13 @@ export class IxEngineSys {
                     const sUseEnum = IndexationTaskN.fIxEnum(this, idRow, sCol, vRow[sCol]);
                     if(sUseEnum){
 
-                        if(!ixChunkEnumUse[sCol]){
-                            ixChunkEnumUse[sCol] = {};
+                        if(!ixEnumUse[sCol]){
+                            ixEnumUse[sCol] = {};
                         }
-                        if(!ixChunkEnumUse[sCol][sUseEnum]){
-                            ixChunkEnumUse[sCol][sUseEnum] = 0;
+                        if(!ixEnumUse[sCol][sUseEnum]){
+                            ixEnumUse[sCol][sUseEnum] = [];
                         }
-                        ixChunkEnumUse[sCol][sUseEnum]++;
+                        ixEnumUse[sCol][sUseEnum].push(idRow);
                     }
                     continue;
                 } else {
@@ -232,39 +238,40 @@ export class IxEngineSys {
                     continue;
                 }
 
-                // TODO тут можно оптимизировать бесполезное удаление и бесполезную индексацию при повторной индексации того же самого
                 if(vOldVal && vOldVal == vRow[sCol]){ // Если равно не производить
                     continue;
                 }
 
                 const aDataChunk = this.encriptChunk(vRow[sCol]);
 
-                // TODO временно отключено
-                // if(vOldVal){ // Если есть старое значение чистим лишнее
-                //     const aOldChunk = this.encriptChunk(vOldVal);
-                //     const aDelChunk = _.difference(aOldChunk, aDataChunk);
+                //  временно отключено
+                if(vOldVal){ // Если есть старое значение чистим лишнее
+                    const aOldChunk = this.encriptChunk(vOldVal);
+                    const aDelChunk = _.difference(aOldChunk, aDataChunk);
 
-                //     const vLetterCol = this.ixLetter[sCol];
-                //     for (let i = 0; i < aDelChunk.length; i++) {
-                //         const sOldChunk = aDelChunk[i];
+                    console.log('DEL CHUNK',aDelChunk);
+
+                    const vLetterCol = this.ixLetter[sCol];
+                    for (let i = 0; i < aDelChunk.length; i++) {
+                        const sOldChunk = aDelChunk[i];
                         
-                //         if(vLetterCol && vLetterCol[sOldChunk] && vLetterCol[sOldChunk].ix[vRow.id]){
+                        if(vLetterCol && vLetterCol[sOldChunk]){
 
-                //             delete vLetterCol[sOldChunk].ix[vRow.id];
+                            // delete vLetterCol[sOldChunk].ix[vRow.id];
 
-                //             // Помечаем чанк как использованный
-                //             if(!ixChunkLetterUse[sCol]){
-                //                 ixChunkLetterUse[sCol] = {};
-                //             }
+                            // Помечаем чанк как использованный
+                            if(!ixChunkLetterUse[sCol]){
+                                ixChunkLetterUse[sCol] = {};
+                            }
     
-                //             if(!ixChunkLetterUse[sCol][sOldChunk]){
-                //                 ixChunkLetterUse[sCol][sOldChunk] = 0;
-                //             }
-                //             ixChunkLetterUse[sCol][sOldChunk]++;
-                //         }
-                //     }
+                            if(!ixChunkLetterUse[sCol][sOldChunk]){
+                                ixChunkLetterUse[sCol][sOldChunk] = [];
+                            }
+                            ixChunkLetterUse[sCol][sOldChunk].push(idRow);
+                        }
+                    }
                     
-                // }
+                }
 
                 for (let i = 0; i < aDataChunk.length; i++) {
                     const sDataChunk = aDataChunk[i];
@@ -275,23 +282,23 @@ export class IxEngineSys {
                     }
 
                     if (!this.ixLetter[sCol][sDataChunk]){
-                        this.ixLetter[sCol][sDataChunk] = new Uint32Array(1000); // Индекс
+                        this.ixLetter[sCol][sDataChunk] = new Uint32Array(100); // Индекс
                     }
 
                     // console.log(this.ixLetterIx[sCol][sDataChunk][vRow.id])
 
-                    // if(this.ixLetter[sCol][sDataChunk].ix[vRow.id]){
+                    if(ixChunkLetterUse[sCol] && ixChunkLetterUse[sCol][sDataChunk] && ixChunkLetterUse[sCol][sDataChunk][vRow.id]){
+                        delete ixChunkLetterUse[sCol][sDataChunk][vRow.id];
+                        // if(!ixChunkLetterUse[sCol]){
+                        //     ixChunkLetterUse[sCol] = {};
+                        // }
 
-                        if(!ixChunkLetterUse[sCol]){
-                            ixChunkLetterUse[sCol] = {};
-                        }
-
-                        if(!ixChunkLetterUse[sCol][sDataChunk]){
-                            ixChunkLetterUse[sCol][sDataChunk] = 0;
-                        }
-                        ixChunkLetterUse[sCol][sDataChunk]++;
+                        // if(!ixChunkLetterUse[sCol][sDataChunk]){
+                        //     ixChunkLetterUse[sCol][sDataChunk] = [];
+                        // }
+                        // ixChunkLetterUse[sCol][sDataChunk].push(idRow);
                         
-                    // }
+                    }
 
                     // this.ixLetter[sCol][sDataChunk].list.push(vRow.id)
                     // this.ixLetter[sCol][sDataChunk].ix[vRow.id] = vRow.id;
@@ -304,9 +311,9 @@ export class IxEngineSys {
                     this.ixLetter[sCol][sDataChunk][0]++;
 
                     this.cnt++;
-                    if(this.cntCopy++ > 100000){
-                        this.cntCopy = 0;
-                        console.log('indexation_chunk',this.cnt, this.cntCopy);
+                    if(this.cnt > 100000){
+                        this.cnt = 0;
+                        console.log('indexation_chunk',this.cnt, this.cntCopy++);
                     }
 
                 }
@@ -318,23 +325,106 @@ export class IxEngineSys {
         }
 
         // const akChunkUse = Object.keys(ixChunkUse);
-        // for (const kColUse in ixChunkLetterUse) {
-        //     const vChunkUse = ixChunkLetterUse[kColUse]
+        // ОЧИСТКА
+
+        
+        // console.log('ОЧИСТКА1', ixChunkLetterUse);
+        for (const kColUse in ixChunkLetterUse) {
+            const vChunkUse = ixChunkLetterUse[kColUse]
             
-        //     for (const kChunkUse in vChunkUse) {
-        //         this.ixLetter[kColUse][kChunkUse].list = Object.values(this.ixLetter[kColUse][kChunkUse].ix);
-        //         this.cnt++;
+            for (const kChunkUse in vChunkUse) {
+                const aChunkRow = this.ixLetter[kColUse][kChunkUse];
+                const aiChunkRowUse = ixChunkLetterUse[kColUse][kChunkUse];
+                const ixChunkRowUse = _.keyBy(aiChunkRowUse);
 
-        //         this.cntCopy += this.ixLetter[kColUse][kChunkUse].list.length;
-
-        //         console.log('===this.ixLetter',this.cnt, this.cntCopy);
-
-        //         if(this.cnt % 10000 == 0){
-        //             this.cntCopy = 0;
-        //         }
+                // console.log('ОЧИСТКА2', ixChunkRowUse, aChunkRow)
                 
-        //     }
-        // }
+                const ixChunkRowNewUniq:Record<number, number> = {};
+                for (let i = 0; i < aChunkRow[0]; i++) {
+                    const idChunkRow = aChunkRow[i+4];
+                    if(idChunkRow == 0) continue;
+                    if(!ixChunkRowUse[idChunkRow]){
+                        ixChunkRowNewUniq[idChunkRow] = idChunkRow;
+                    }
+                }
+
+
+                const aChunkRowUniqNew = Object.values(ixChunkRowNewUniq)
+                if(aChunkRowUniqNew.length == 0) {
+                    delete this.ixLetter[kColUse][kChunkUse]
+                } else {
+
+                    // console.log('ixChunkRowNewUniq', ixChunkRowNewUniq);
+
+                    const aRowsNew = new Uint32Array(aChunkRow.length + 100);
+                    // console.log('ОЧИСТКА3', kColUse, kChunkUse, aChunkRowUniqNew, aRowsNew)
+                    
+                    aRowsNew[0] = 0;
+                    for (let i = 0; i < aChunkRowUniqNew.length; i++) {
+                        const iChunkRowUniqNew = aChunkRowUniqNew[i];
+
+                        aRowsNew[i+4] = iChunkRowUniqNew;
+                        aRowsNew[0]++;
+                        
+                    }
+                    
+                    this.ixLetter[kColUse][kChunkUse] = aRowsNew;
+                    this.cnt++;
+                }
+                
+            }
+        }
+
+        // console.log('ОЧИСТКА10', this.ixLetter);
+
+        // console.log('ОЧИСТКА ENUM1', ixEnumUse);
+        for (const kColUse in ixEnumUse) {
+            const vEnumUse = ixEnumUse[kColUse]
+            
+            for (const kEnumUse in vEnumUse) {
+                const aEnumRow = this.ixEnum[kColUse][kEnumUse];
+                const aiEnumRowUse = ixEnumUse[kColUse][kEnumUse];
+                const ixEnumRowUse = _.keyBy(aiEnumRowUse);
+
+                // console.log('ОЧИСТКА ENUM2', ixEnumRowUse, aEnumRow)
+                
+                const ixEnumRowNewUniq:Record<number, number> = {};
+                for (let i = 0; i < aEnumRow[0]; i++) {
+                    const idEnumRow = aEnumRow[i+4];
+                    if(idEnumRow == 0) continue;
+                    if(!ixEnumRowUse[idEnumRow]){
+                        ixEnumRowNewUniq[idEnumRow] = idEnumRow;
+                    }
+                }
+
+
+                const aEnumRowUniqNew = Object.values(ixEnumRowNewUniq)
+                if(aEnumRowUniqNew.length == 0) {
+                    delete this.ixEnum[kColUse][kEnumUse]
+                } else {
+
+                    // console.log('ixChunkRowNewUniq ENUM', ixEnumRowNewUniq);
+
+                    const aRowsNew = new Uint32Array(aEnumRow.length + 100);
+                    // console.log('ОЧИСТКА ENUM3', kColUse, kEnumUse, aEnumRowUniqNew, aRowsNew)
+                    
+                    aRowsNew[0] = 0;
+                    for (let i = 0; i < aEnumRowUniqNew.length; i++) {
+                        const iEnumRowUniqNew = aEnumRowUniqNew[i];
+
+                        aRowsNew[i+4] = iEnumRowUniqNew;
+                        aRowsNew[0]++;
+                        
+                    }
+                    
+                    this.ixEnum[kColUse][kEnumUse] = aRowsNew;
+                    this.cnt++;
+                }
+                
+            }
+        }
+
+        // console.log('ОЧИСТКА ENUM10', this.ixEnum);
         // for (const kColUse in ixChunkEnumUse) {
         //     const vEnumUse = ixChunkEnumUse[kColUse]
             

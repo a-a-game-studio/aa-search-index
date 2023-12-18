@@ -36,7 +36,7 @@ router.ws(QueryT.schema, async (ctx: AAContext) => {
     console.log('QueryT.schema');
 
     try {
-        gIxEngineSys.fSchema(ctx.body.data);
+        await gIxEngineSys.fSchema(ctx.body.data);
     } catch(e){
         console.log('QueryT.schema>>>', e)
     }
@@ -54,7 +54,7 @@ router.ws(QueryT.schema, async (ctx: AAContext) => {
     const auidMsg:string[] = [];
 
     try {
-        gIxEngineSys.fIndexation(ctx.body.data);
+        await gIxEngineSys.fIndexation(ctx.body.data);
     } catch(e){
         console.log('QueryT.insert>>>', e)
     }

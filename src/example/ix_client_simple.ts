@@ -11,7 +11,7 @@ import { SchemaT } from "../interface/CommonI";
 
 // CORE API
 const ixClientSys = new IxClientSys({
-    baseURL: 'ws://127.0.0.1:8088',
+    baseURL: 'ws://127.0.0.1:3380',
     nameApp: 'test_client'
 })
 
@@ -27,42 +27,33 @@ async function run(){
         'user_id':SchemaT.ix_enum,
     });
 
-    const aUser = await db('phpbb_users')
-        .limit(10000)
-        .orderBy('user_id', 'asc')
-        .select(
-            {id:'user_id'},
-            {user_id:'user_id'}, 
-            'username', 
-            {login:'username'}, 
-            'user_fullname', 
-            'user_mobile', 
-            'consumer_rating'
-        );
-
-    for (let i = 0; i < aUser.length; i++) {
-        const vUser = aUser[i];
-        vUser.user_id = String(vUser.user_id);
-    }
 
     console.log('INSERT START');
     console.time('tInsert')
-    await ixClientSys.insert('user', aUser);
+    await ixClientSys.insert('user', [{
+        'id':'54',
+        'username':'Ольга',
+        'user_fullname':'Ольга Викторовна Петрович',
+        'user_mobile':'79998887766',
+        'consumer_rating':'2',
+        'login':'Ольга',
+        'user_id':'54',
+    }]);
     console.timeEnd('tInsert')
 
     console.time('tSelectString')
-    const aidSelect = await ixClientSys.select('user', ixClientSys.query()
-        .match('username', 'ольга')
-        .match('username', 'света')
-        // .match('id', '26096')
-        .in('id', ['156','26096','62634','58448'])
-        .where('consumer_rating', '=', String(3))
-        // .where('id', '=', '26096')
-        .limit(10)
-    );
+    // const aidSelect = await ixClientSys.select('user', ixClientSys.query()
+    //     .match('username', 'ольга')
+    //     .match('username', 'света')
+    //     // .match('id', '26096')
+    //     .in('id', ['156','26096','62634','58448'])
+    //     .where('consumer_rating', '=', String(3))
+    //     // .where('id', '=', '26096')
+    //     .limit(10)
+    // );
     console.timeEnd('tSelectString')
 
-    console.log('aidSelect',aidSelect);
+    // console.log('aidSelect',aidSelect);/
 
     // Удаление записей
     // await ixClientSys.truncate('user');

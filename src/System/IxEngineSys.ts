@@ -4,6 +4,7 @@ import { CmdT, QueryContextI, SchemaT } from '../interface/CommonI';
 import { IndexationTaskN } from './IndexationTask'
 import * as conf from '../Config/MainConfig'
 import e from "express";
+import { db } from "./DBConnect";
 
 
 /** Система очередей */
@@ -172,15 +173,86 @@ export class IxEngineSys {
     }
 
     /** Установить схему */
-    fSchema(ixData:Record<string, SchemaT>){
+    async fSchema(ixData:Record<string, SchemaT>){
         this.ixSchema = ixData;
+        await db.raw(`DROP TABLE IF EXISTS dt`);
+        await db.raw(`DROP TABLE IF EXISTS ix`);
+
+        console.log('Создание схемы')
+
+        // Создание таблицы индекса
+        await db.raw(`
+            CREATE TABLE ix (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                col VARCHAR(50) NOT NULL DEFAULT '' COLLATE 'utf8mb4_bin',
+                chunk CHAR(5) NOT NULL DEFAULT '' COLLATE 'utf8mb4_bin',
+                data LONGBLOB NULL DEFAULT '',
+                PRIMARY KEY (id) USING BTREE,
+                UNIQUE INDEX col_chunk (col,chunk) USING BTREE
+            )
+            COLLATE='utf8mb4_bin'
+            ENGINE=InnoDB
+        `);
+
+        if (!await db.schema.hasTable('dt')) {
+            await db.schema.createTable('dt', (table) => {
+                table.increments('id');
+
+                for (const k in ixData) {
+                    const v = ixData[k];
+
+                    if(v == SchemaT.int){
+                        table.integer(k, 12)
+                            .defaultTo(0)
+                    }
+
+                    if(v == SchemaT.num){
+                        table.decimal(k, 2)
+                            .defaultTo(0)
+                    }
+
+                    if(v == SchemaT.enum){
+                        table.string(k, 50)
+                            .defaultTo('')
+                    }
+
+                    if(v == SchemaT.ix_enum){
+                        table.string(k, 50)
+                            .defaultTo('')
+                            .index(k)
+                    }
+
+                    if(v == SchemaT.ix_string){
+                        table.string(k, 255)
+                            .defaultTo('')
+                            .index(k)
+                    }
+
+                    if(v == SchemaT.ix_text){
+                        table.text(k, 'longtext')
+                            .defaultTo('')
+                            .index(k)
+                    }
+
+                    if(v == SchemaT.text){
+                        table.text(k, 'longtext')
+                            .defaultTo('')
+                            .index(k)
+                    }
+
+                }
+    
+                table.comment('Данные индексв');
+                table.collate('utf8_bin');
+            });
+        }
     }
     
 
     cnt = 0;
     cntCopy = 0;
     /** Индексация */
-    fIndexation(aData:any[]){
+    async fIndexation(aData:any[]){
 
         const ixChunkLetterUse:Record<string, Record<string, number[]>> = {};
         const ixEnumUse:Record<string, Record<string, number[]>> = {};
@@ -317,8 +389,11 @@ export class IxEngineSys {
                     }
 
                 }
-                
+
             }
+
+            console.log(this.ixData[idRow]);
+                await db('dt').insert(aData).onConflict().merge();
 
             // vUser.username;
 

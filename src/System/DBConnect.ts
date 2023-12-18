@@ -1,5 +1,5 @@
 import knex from "knex";
-import { dbConf } from "../Config/MainConfig";
+import { dbIndex } from "../Config/MainConfig";
 
-export const db = knex(dbConf);
+export const db = knex(dbIndex);
 

@@ -16,11 +16,7 @@ export class IxEngineSys {
     ixData:Record<number, Record<string, any>> = {};
 
     // Индексы
-    ixLetter:Record<string, Record<string, Uint32Array>> = {};
-    // ixLetterIx:Record<string, Record<string, Record<number, number>>> = {};
-
-    ixEnum:Record<string, Record<string, Uint32Array>> = {};
-
+    ixLetter:Record<string, Uint32Array> = {};
 
     /** Кодирование информации по пользователю */
     encriptChunk(sWord: string): string[] {
@@ -59,6 +55,8 @@ export class IxEngineSys {
         const sTextLow = sText.toLowerCase();
         const ixFind:Record<number, number> = {}; // Результат
 
+        console.log('FIND',this.ixLetter)
+
 
         // console.log('find>>>', sTextLow, sCol);
 
@@ -71,8 +69,8 @@ export class IxEngineSys {
             const ixIndex:Record<number, number> = {};
             for (let c = 0; c < aFindText.length; c++) {
                 const sFindText = aFindText[c];
-                if (ixLetterCol[sFindText]){
-                    const aIndex = ixLetterCol[sFindText];
+                if (this.ixLetter[sCol+'--'+sFindText]){
+                    const aIndex = this.ixLetter[sCol+'--'+sFindText];
                     // console.log('aIndex', aIndex);
 
                     const ixUniq:Record<number, boolean> = {};
@@ -148,7 +146,7 @@ export class IxEngineSys {
 
             }
         } else if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_enum) {
-            const aidData = this.ixEnum[sCol][sTextLow];
+            const aidData = this.ixLetter[sCol+'--'+sTextLow];
             if(aidData){
                 for (let i = 4; i < aidData[0]; i++) {
                     const idData = aidData[i];
@@ -156,7 +154,7 @@ export class IxEngineSys {
                 }
             }
         } else if(sCol === 'id') {
-            const aidData = this.ixEnum[sCol][sTextLow];
+            const aidData = this.ixLetter[sCol+'--'+sTextLow];
             if(aidData){
                 for (let i = 4; i < aidData[0]; i++) {
                     const idData = aidData[i];
@@ -184,11 +182,10 @@ export class IxEngineSys {
         await db.raw(`
             CREATE TABLE ix (
                 id INT(11) NOT NULL AUTO_INCREMENT,
-                col VARCHAR(50) NOT NULL DEFAULT '' COLLATE 'utf8mb4_bin',
-                chunk CHAR(5) NOT NULL DEFAULT '' COLLATE 'utf8mb4_bin',
+                k VARCHAR(50) NOT NULL DEFAULT '' COLLATE 'utf8mb4_bin',
                 data LONGBLOB NULL DEFAULT '',
                 PRIMARY KEY (id) USING BTREE,
-                UNIQUE INDEX col_chunk (col,chunk) USING BTREE
+                UNIQUE INDEX k (k) USING BTREE
             )
             COLLATE='utf8mb4_bin'
             ENGINE=InnoDB
@@ -254,9 +251,45 @@ export class IxEngineSys {
     /** Индексация */
     async fIndexation(aData:any[]){
 
-        const ixChunkLetterUse:Record<string, Record<string, number[]>> = {};
-        const ixEnumUse:Record<string, Record<string, number[]>> = {};
+        const ixChunkLetterUse:Record<string, number[]> = {};
+        const ixEnumUse:Record<string, number[]> = {};
         
+        const aChunkIndex:Record<string, Record<string, number[]>> = {};
+
+        const aChunkString:{}[] = [];
+
+        const aidRow = aData.map(el => el.id);
+        const aRowDB = await db('dt').whereIn('id', aidRow).select();
+
+        // console.log(aRowDB);
+
+        // Получение данных из БД
+        for (let c = 0; c < aRowDB.length; c++) {
+            const vRowDB = aRowDB[c];
+            this.ixData[vRowDB.id] = vRowDB;
+
+            const akData = Object.keys(vRowDB);
+
+            // console.log(akData)
+            for (let i = 0; i < akData.length; i++) {
+                const kData = akData[i];
+
+                // console.log(kData,':',this.ixSchema[kData], this.ixSchema[kData]);
+                if(this.ixSchema[kData] == SchemaT.ix_enum){
+                    aChunkString.push(kData+'--'+vRowDB[kData])
+                }
+
+                if(this.ixSchema[kData] == SchemaT.ix_string){
+                    aChunkString.push(...this.encriptChunk(vRowDB[kData]).map((el) => kData+'--'+el));
+                }
+            }
+
+        }
+
+        const aIndexDB = await db('ix').whereIn('k', aChunkString).select();
+        console.log('aChunkString>>>',aChunkString);
+
+        // ============================================================
 
         for (let c = 0; c < aData.length; c++) {
             const vRow = aData[c];
@@ -295,13 +328,11 @@ export class IxEngineSys {
                     const sUseEnum = IndexationTaskN.fIxEnum(this, idRow, sCol, vRow[sCol]);
                     if(sUseEnum){
 
-                        if(!ixEnumUse[sCol]){
-                            ixEnumUse[sCol] = {};
+                        if(!ixEnumUse[sCol+'--'+sUseEnum]){
+                            ixEnumUse[sCol+'--'+sUseEnum] = [];
                         }
-                        if(!ixEnumUse[sCol][sUseEnum]){
-                            ixEnumUse[sCol][sUseEnum] = [];
-                        }
-                        ixEnumUse[sCol][sUseEnum].push(idRow);
+                        ixEnumUse[sCol+'--'+sUseEnum].push(idRow);
+                        
                     }
                     continue;
                 } else {
@@ -323,23 +354,20 @@ export class IxEngineSys {
 
                     console.log('DEL CHUNK',aDelChunk);
 
-                    const vLetterCol = this.ixLetter[sCol];
+                    // const vLetterCol = this.ixLetter[sCol];
                     for (let i = 0; i < aDelChunk.length; i++) {
                         const sOldChunk = aDelChunk[i];
                         
-                        if(vLetterCol && vLetterCol[sOldChunk]){
+                        if(this.ixLetter[sCol+'--'+sOldChunk]){
 
                             // delete vLetterCol[sOldChunk].ix[vRow.id];
 
                             // Помечаем чанк как использованный
-                            if(!ixChunkLetterUse[sCol]){
-                                ixChunkLetterUse[sCol] = {};
-                            }
     
-                            if(!ixChunkLetterUse[sCol][sOldChunk]){
-                                ixChunkLetterUse[sCol][sOldChunk] = [];
+                            if(!ixChunkLetterUse[sCol+'--'+sOldChunk]){
+                                ixChunkLetterUse[sCol+'--'+sOldChunk] = [];
                             }
-                            ixChunkLetterUse[sCol][sOldChunk].push(idRow);
+                            ixChunkLetterUse[sCol+'--'+sOldChunk].push(idRow);
                         }
                     }
                     
@@ -349,18 +377,15 @@ export class IxEngineSys {
                     const sDataChunk = aDataChunk[i];
                     
 
-                    if (!this.ixLetter[sCol]){
-                        this.ixLetter[sCol] = {};
-                    }
 
-                    if (!this.ixLetter[sCol][sDataChunk]){
-                        this.ixLetter[sCol][sDataChunk] = new Uint32Array(100); // Индекс
+                    if (!this.ixLetter[sCol+'--'+sDataChunk]){
+                        this.ixLetter[sCol+'--'+sDataChunk] = new Uint32Array(100); // Индекс
                     }
 
                     // console.log(this.ixLetterIx[sCol][sDataChunk][vRow.id])
 
-                    if(ixChunkLetterUse[sCol] && ixChunkLetterUse[sCol][sDataChunk] && ixChunkLetterUse[sCol][sDataChunk][vRow.id]){
-                        delete ixChunkLetterUse[sCol][sDataChunk][vRow.id];
+                    if(ixChunkLetterUse[sCol] && ixChunkLetterUse[sCol+'--'+sDataChunk] && ixChunkLetterUse[sCol+'--'+sDataChunk][vRow.id]){
+                        delete ixChunkLetterUse[sCol+'--'+sDataChunk][vRow.id];
                         // if(!ixChunkLetterUse[sCol]){
                         //     ixChunkLetterUse[sCol] = {};
                         // }
@@ -375,12 +400,12 @@ export class IxEngineSys {
                     // this.ixLetter[sCol][sDataChunk].list.push(vRow.id)
                     // this.ixLetter[sCol][sDataChunk].ix[vRow.id] = vRow.id;
 
-                    const iDataLength = this.ixLetter[sCol][sDataChunk][0]; // текущее количество данных
-                    if(iDataLength + 4 > this.ixLetter[sCol][sDataChunk].length){
-                        this.ixLetter[sCol][sDataChunk] = new Uint32Array(this.ixLetter[sCol][sDataChunk], 0, this.ixLetter[sCol][sDataChunk].length * 2)
+                    const iDataLength = this.ixLetter[sCol+'--'+sDataChunk][0]; // текущее количество данных
+                    if(iDataLength + 4 > this.ixLetter[sCol+'--'+sDataChunk].length){
+                        this.ixLetter[sCol+'--'+sDataChunk] = new Uint32Array(this.ixLetter[sCol+'--'+sDataChunk], 0, this.ixLetter[sCol+'--'+sDataChunk].length * 2)
                     }
-                    this.ixLetter[sCol][sDataChunk][iDataLength+4] = vRow.id;
-                    this.ixLetter[sCol][sDataChunk][0]++;
+                    this.ixLetter[sCol+'--'+sDataChunk][iDataLength+4] = vRow.id;
+                    this.ixLetter[sCol+'--'+sDataChunk][0]++;
 
                     this.cnt++;
                     if(this.cnt > 100000){
@@ -392,8 +417,11 @@ export class IxEngineSys {
 
             }
 
-            console.log(this.ixData[idRow]);
-                await db('dt').insert(aData).onConflict().merge();
+            
+            
+
+            // console.log(this.ixData[idRow]);
+            await db('dt').insert(aData).onConflict().merge();
 
             // vUser.username;
 
@@ -408,8 +436,8 @@ export class IxEngineSys {
             const vChunkUse = ixChunkLetterUse[kColUse]
             
             for (const kChunkUse in vChunkUse) {
-                const aChunkRow = this.ixLetter[kColUse][kChunkUse];
-                const aiChunkRowUse = ixChunkLetterUse[kColUse][kChunkUse];
+                const aChunkRow = this.ixLetter[kColUse+'--'+kChunkUse];
+                const aiChunkRowUse = ixChunkLetterUse[kColUse+'--'+kChunkUse];
                 const ixChunkRowUse = _.keyBy(aiChunkRowUse);
 
                 // console.log('ОЧИСТКА2', ixChunkRowUse, aChunkRow)
@@ -426,7 +454,9 @@ export class IxEngineSys {
 
                 const aChunkRowUniqNew = Object.values(ixChunkRowNewUniq)
                 if(aChunkRowUniqNew.length == 0) {
-                    delete this.ixLetter[kColUse][kChunkUse]
+                    delete this.ixLetter[kColUse+'--'+kChunkUse]
+                    await db('ix').where({'k':kColUse+'--'+kChunkUse})
+                    console.log('DEL:',kColUse,'-',kChunkUse)
                 } else {
 
                     // console.log('ixChunkRowNewUniq', ixChunkRowNewUniq);
@@ -443,7 +473,7 @@ export class IxEngineSys {
                         
                     }
                     
-                    this.ixLetter[kColUse][kChunkUse] = aRowsNew;
+                    this.ixLetter[kColUse+'--'+kChunkUse] = aRowsNew;
                     this.cnt++;
                 }
                 
@@ -457,8 +487,8 @@ export class IxEngineSys {
             const vEnumUse = ixEnumUse[kColUse]
             
             for (const kEnumUse in vEnumUse) {
-                const aEnumRow = this.ixEnum[kColUse][kEnumUse];
-                const aiEnumRowUse = ixEnumUse[kColUse][kEnumUse];
+                const aEnumRow = this.ixLetter[kColUse+'--'+kEnumUse];
+                const aiEnumRowUse = ixEnumUse[kColUse+'--'+kEnumUse];
                 const ixEnumRowUse = _.keyBy(aiEnumRowUse);
 
                 // console.log('ОЧИСТКА ENUM2', ixEnumRowUse, aEnumRow)
@@ -472,10 +502,11 @@ export class IxEngineSys {
                     }
                 }
 
-
                 const aEnumRowUniqNew = Object.values(ixEnumRowNewUniq)
                 if(aEnumRowUniqNew.length == 0) {
-                    delete this.ixEnum[kColUse][kEnumUse]
+                    delete this.ixLetter[kColUse+'--'+kEnumUse]
+                    await db('ix').where({'k':kColUse+'--'+kEnumUse})
+                    console.log('DEL:',kColUse,'-',kEnumUse)
                 } else {
 
                     // console.log('ixChunkRowNewUniq ENUM', ixEnumRowNewUniq);
@@ -492,12 +523,44 @@ export class IxEngineSys {
                         
                     }
                     
-                    this.ixEnum[kColUse][kEnumUse] = aRowsNew;
+                    this.ixLetter[kColUse+'--'+kEnumUse] = aRowsNew;
                     this.cnt++;
                 }
                 
             }
         }
+
+        const aChunkIndexInsert = [];
+
+        for (const kColUse in this.ixLetter) {
+            
+            const aChunkRow = this.ixLetter[kColUse];
+            console.log({
+                k:kColUse,
+                data:Buffer.from(aChunkRow.buffer)
+            });
+            aChunkIndexInsert.push({
+                k:kColUse,
+                data:Buffer.from(aChunkRow.buffer)
+            })
+            
+        }
+
+        for (const k in this.ixLetter) {
+   
+            const aEnumRow = this.ixLetter[k];
+            // console.log({
+            //     k:k,
+            //     data:Buffer.from(aEnumRow.buffer)
+            // })
+            aChunkIndexInsert.push({
+                k:k,
+                data:Buffer.from(aEnumRow.buffer)
+            })
+            
+        }
+
+        await db('ix').insert(aChunkIndexInsert).onConflict().merge();
 
         // console.log('ОЧИСТКА ENUM10', this.ixEnum);
         // for (const kColUse in ixChunkEnumUse) {
@@ -547,7 +610,6 @@ export class IxEngineSys {
     public truncate() {
         this.ixData = {};
         this.ixLetter = {};
-        this.ixEnum = {};
     }
 
     /** run */
@@ -637,8 +699,8 @@ export class IxEngineSys {
                     const valIn = aQuery[2][j];
 
                     // Проверяем наличие значения
-                    if(this.ixEnum[sCol][valIn]){
-                        aidInRow.push(...this.ixEnum[sCol][valIn])
+                    if(this.ixLetter[sCol][valIn]){
+                        aidInRow.push(...this.ixLetter[sCol+'--'+valIn])
                     }
                 }
 
@@ -680,8 +742,8 @@ export class IxEngineSys {
                     const valIn = aQuery[2][j];
 
                     // Проверяем наличие значения
-                    if(this.ixEnum[sCol][valIn]){
-                        aidInRow.push(...this.ixEnum[sCol][valIn])
+                    if(this.ixLetter[sCol][valIn]){
+                        aidInRow.push(...this.ixLetter[sCol+'--'+valIn])
                     }
                 }
 

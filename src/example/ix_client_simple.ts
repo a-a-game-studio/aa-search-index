@@ -39,18 +39,38 @@ async function run(){
         'login':'Ольга',
         'user_id':'54',
     }]);
+
+    await ixClientSys.insert('user', [{
+        'id':'55',
+        'username':'Ольха',
+        'user_fullname':'Ольха Яковлевна Гемеургевич',
+        'user_mobile':'71112227766',
+        'consumer_rating':'1',
+        'login':'Ольха',
+        'user_id':'54',
+    }]);
+
+    await ixClientSys.insert('user', [{
+        'id':'56',
+        'username':'Василиса',
+        'user_fullname':'Василиса Яковлевна Гемеургевич',
+        'user_mobile':'79992227766',
+        'consumer_rating':'1',
+        'login':'Ольха',
+        'user_id':'56',
+    }]);
     console.timeEnd('tInsert')
 
     console.time('tSelectString')
-    // const aidSelect = await ixClientSys.select('user', ixClientSys.query()
-    //     .match('username', 'ольга')
-    //     .match('username', 'света')
-    //     // .match('id', '26096')
-    //     .in('id', ['156','26096','62634','58448'])
-    //     .where('consumer_rating', '=', String(3))
-    //     // .where('id', '=', '26096')
-    //     .limit(10)
-    // );
+    const aidSelect = await ixClientSys.select('user', ixClientSys.query()
+        .match('username', 'Ольга')
+        // .match('username', 'света')
+        // .match('id', '26096')
+        // .in('id', ['156','26096','62634','58448'])
+        // .where('consumer_rating', '=', String(1))
+        // .where('id', '=', '26096')
+        .limit(10)
+    );
     console.timeEnd('tSelectString')
 
     // console.log('aidSelect',aidSelect);/
@@ -83,11 +103,6 @@ async function run(){
     // ]);
     // console.timeEnd('tSelectGroup')
 
-
-    
-
-    
-    
     await mWait(1000);
 
 

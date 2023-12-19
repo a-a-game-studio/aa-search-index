@@ -59,11 +59,22 @@ async function run(){
         'login':'Ольха',
         'user_id':'56',
     }]);
+
+    await ixClientSys.insert('user', [{
+        'id':'56',
+        'username':'Василис',
+        'user_fullname':'Василис Як Гемеургевич',
+        'user_mobile':'79992227766',
+        'consumer_rating':'1',
+        'login':'Ольха',
+        'user_id':'56',
+    }]);
     console.timeEnd('tInsert')
 
     console.time('tSelectString')
     const aidSelect = await ixClientSys.select('user', ixClientSys.query()
         .match('username', 'Ольга')
+        // .match('user_fullname', 'яковевна')
         // .match('username', 'света')
         // .match('id', '26096')
         // .in('id', ['156','26096','62634','58448'])

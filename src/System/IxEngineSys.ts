@@ -5,6 +5,7 @@ import { IndexationTaskN } from './IndexationTask'
 import * as conf from '../Config/MainConfig'
 import e from "express";
 import { db } from "./DBConnect";
+import { fromLong } from "ip";
 
 
 /** Система очередей */
@@ -55,16 +56,13 @@ export class IxEngineSys {
         const sTextLow = sText.toLowerCase();
         const ixFind:Record<number, number> = {}; // Результат
 
-        console.log('FIND',this.ixLetter)
-
-
-        // console.log('find>>>', sTextLow, sCol);
+        // console.log('FIND',this.ixLetter)
 
         if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_string || this.ixSchema[sCol] == SchemaT.ix_text){
 
             const aFindText = this.encriptChunk(sText);
 
-            const ixLetterCol = this.ixLetter[sCol];
+            // const ixLetterCol = this.ixLetter[sCol];
 
             const ixIndex:Record<number, number> = {};
             for (let c = 0; c < aFindText.length; c++) {
@@ -75,12 +73,12 @@ export class IxEngineSys {
 
                     const ixUniq:Record<number, boolean> = {};
 
-                    // console.log('<<<1>>>',sFindText, aIndex[0], aIndex)
+                    console.log('<<<1>>>',sFindText, aIndex[0], aIndex)
 
                     for (let i = 0; i < aIndex[0]; i++) {
                         const idData = aIndex[i+4];
 
-                        // console.log('>>>', c,idData)
+                        console.log('>>>', c, idData)
 
                         if (!ixIndex[idData] && c == 0){
                             ixIndex[idData] = 0;
@@ -250,7 +248,7 @@ export class IxEngineSys {
     cntCopy = 0;
     /** Индексация */
     async fIndexation(aData:any[]){
-
+        this.ixData = {};
         const ixChunkLetterUse:Record<string, number[]> = {};
         const ixEnumUse:Record<string, number[]> = {};
         
@@ -258,10 +256,11 @@ export class IxEngineSys {
 
         const aChunkString:{}[] = [];
 
-        const aidRow = aData.map(el => el.id);
+        const aidRow = aData.map(el => Number(el.id));
         const aRowDB = await db('dt').whereIn('id', aidRow).select();
 
-        // console.log(aRowDB);
+        console.log('aRowDB:',aData,aidRow, aRowDB);
+        
 
         // Получение данных из БД
         for (let c = 0; c < aRowDB.length; c++) {
@@ -286,8 +285,23 @@ export class IxEngineSys {
 
         }
 
-        const aIndexDB = await db('ix').whereIn('k', aChunkString).select();
-        console.log('aChunkString>>>',aChunkString);
+        this.ixLetter = {};
+        if(aChunkString.length){
+            const aIndexDB = await db('ix').whereIn('k', aChunkString).select();
+            console.log('aChunkString>>>',aChunkString);
+            for (let i = 0; i < aIndexDB.length; i++) {
+                const vIndexDb = aIndexDB[i];
+
+                var arrayBuffer = new Uint8Array(vIndexDb.data).buffer;
+                this.ixLetter[vIndexDb.k] = new Uint32Array(arrayBuffer, 0, arrayBuffer.byteLength/4); 
+                // console.log(vIndexDb.k, this.ixLetter[vIndexDb.k])
+            }
+        }
+
+        console.log('--->',this.ixLetter['username--о-л-ь']);
+
+        // console.log('fIndexation.ixLetter', aChunkString);
+        
 
         // ============================================================
 
@@ -384,7 +398,7 @@ export class IxEngineSys {
 
                     // console.log(this.ixLetterIx[sCol][sDataChunk][vRow.id])
 
-                    if(ixChunkLetterUse[sCol] && ixChunkLetterUse[sCol+'--'+sDataChunk] && ixChunkLetterUse[sCol+'--'+sDataChunk][vRow.id]){
+                    if(ixChunkLetterUse[sCol+'--'+sDataChunk] && ixChunkLetterUse[sCol+'--'+sDataChunk][vRow.id]){
                         delete ixChunkLetterUse[sCol+'--'+sDataChunk][vRow.id];
                         // if(!ixChunkLetterUse[sCol]){
                         //     ixChunkLetterUse[sCol] = {};
@@ -404,6 +418,8 @@ export class IxEngineSys {
                     if(iDataLength + 4 > this.ixLetter[sCol+'--'+sDataChunk].length){
                         this.ixLetter[sCol+'--'+sDataChunk] = new Uint32Array(this.ixLetter[sCol+'--'+sDataChunk], 0, this.ixLetter[sCol+'--'+sDataChunk].length * 2)
                     }
+
+                    console.log('>>>:',sCol+'--'+sDataChunk, this.ixLetter[sCol+'--'+sDataChunk][0])
                     this.ixLetter[sCol+'--'+sDataChunk][iDataLength+4] = vRow.id;
                     this.ixLetter[sCol+'--'+sDataChunk][0]++;
 
@@ -431,136 +447,117 @@ export class IxEngineSys {
         // ОЧИСТКА
 
         
-        // console.log('ОЧИСТКА1', ixChunkLetterUse);
-        for (const kColUse in ixChunkLetterUse) {
-            const vChunkUse = ixChunkLetterUse[kColUse]
+        console.log('ОЧИСТКА1', ixChunkLetterUse);
+        for (const kChunkUse in ixChunkLetterUse) {
+
+            const aChunkRow = this.ixLetter[kChunkUse];
+            const aiChunkRowUse = ixChunkLetterUse[kChunkUse];
+            const ixChunkRowUse = _.keyBy(aiChunkRowUse);
+
+            // console.log('ОЧИСТКА2', ixChunkRowUse, aChunkRow)
             
-            for (const kChunkUse in vChunkUse) {
-                const aChunkRow = this.ixLetter[kColUse+'--'+kChunkUse];
-                const aiChunkRowUse = ixChunkLetterUse[kColUse+'--'+kChunkUse];
-                const ixChunkRowUse = _.keyBy(aiChunkRowUse);
-
-                // console.log('ОЧИСТКА2', ixChunkRowUse, aChunkRow)
-                
-                const ixChunkRowNewUniq:Record<number, number> = {};
-                for (let i = 0; i < aChunkRow[0]; i++) {
-                    const idChunkRow = aChunkRow[i+4];
-                    if(idChunkRow == 0) continue;
-                    if(!ixChunkRowUse[idChunkRow]){
-                        ixChunkRowNewUniq[idChunkRow] = idChunkRow;
-                    }
+            const ixChunkRowNewUniq:Record<number, number> = {};
+            for (let i = 0; i < aChunkRow[0]; i++) {
+                const idChunkRow = aChunkRow[i+4];
+                if(idChunkRow == 0) continue;
+                if(!ixChunkRowUse[idChunkRow]){
+                    ixChunkRowNewUniq[idChunkRow] = idChunkRow;
                 }
-
-
-                const aChunkRowUniqNew = Object.values(ixChunkRowNewUniq)
-                if(aChunkRowUniqNew.length == 0) {
-                    delete this.ixLetter[kColUse+'--'+kChunkUse]
-                    await db('ix').where({'k':kColUse+'--'+kChunkUse})
-                    console.log('DEL:',kColUse,'-',kChunkUse)
-                } else {
-
-                    // console.log('ixChunkRowNewUniq', ixChunkRowNewUniq);
-
-                    const aRowsNew = new Uint32Array(aChunkRow.length + 100);
-                    // console.log('ОЧИСТКА3', kColUse, kChunkUse, aChunkRowUniqNew, aRowsNew)
-                    
-                    aRowsNew[0] = 0;
-                    for (let i = 0; i < aChunkRowUniqNew.length; i++) {
-                        const iChunkRowUniqNew = aChunkRowUniqNew[i];
-
-                        aRowsNew[i+4] = iChunkRowUniqNew;
-                        aRowsNew[0]++;
-                        
-                    }
-                    
-                    this.ixLetter[kColUse+'--'+kChunkUse] = aRowsNew;
-                    this.cnt++;
-                }
-                
             }
+
+
+            const aChunkRowUniqNew = Object.values(ixChunkRowNewUniq)
+            if(aChunkRowUniqNew.length == 0) {
+                delete this.ixLetter[kChunkUse]
+                await db('ix').where({'k':kChunkUse}).del();
+                console.log('DEL:',kChunkUse)
+            } else {
+
+                // console.log('ixChunkRowNewUniq', ixChunkRowNewUniq);
+
+                const aRowsNew = new Uint32Array(aChunkRow.length + 100);
+                // console.log('ОЧИСТКА3', kColUse, kChunkUse, aChunkRowUniqNew, aRowsNew)
+                
+                aRowsNew[0] = 0;
+                for (let i = 0; i < aChunkRowUniqNew.length; i++) {
+                    const iChunkRowUniqNew = aChunkRowUniqNew[i];
+
+                    aRowsNew[i+4] = iChunkRowUniqNew;
+                    aRowsNew[0]++;
+                    
+                }
+                
+                this.ixLetter[kChunkUse] = aRowsNew;
+                this.cnt++;
+            }
+                
+            
         }
 
         // console.log('ОЧИСТКА10', this.ixLetter);
 
         // console.log('ОЧИСТКА ENUM1', ixEnumUse);
-        for (const kColUse in ixEnumUse) {
-            const vEnumUse = ixEnumUse[kColUse]
+        for (const kEnumUse in ixEnumUse) {
+            const aEnumRow = this.ixLetter[kEnumUse];
+            const aiEnumRowUse = ixEnumUse[kEnumUse];
+            const ixEnumRowUse = _.keyBy(aiEnumRowUse);
+
+            // console.log('ОЧИСТКА ENUM2', ixEnumRowUse, aEnumRow)
             
-            for (const kEnumUse in vEnumUse) {
-                const aEnumRow = this.ixLetter[kColUse+'--'+kEnumUse];
-                const aiEnumRowUse = ixEnumUse[kColUse+'--'+kEnumUse];
-                const ixEnumRowUse = _.keyBy(aiEnumRowUse);
-
-                // console.log('ОЧИСТКА ENUM2', ixEnumRowUse, aEnumRow)
-                
-                const ixEnumRowNewUniq:Record<number, number> = {};
-                for (let i = 0; i < aEnumRow[0]; i++) {
-                    const idEnumRow = aEnumRow[i+4];
-                    if(idEnumRow == 0) continue;
-                    if(!ixEnumRowUse[idEnumRow]){
-                        ixEnumRowNewUniq[idEnumRow] = idEnumRow;
-                    }
+            const ixEnumRowNewUniq:Record<number, number> = {};
+            for (let i = 0; i < aEnumRow[0]; i++) {
+                const idEnumRow = aEnumRow[i+4];
+                if(idEnumRow == 0) continue;
+                if(!ixEnumRowUse[idEnumRow]){
+                    ixEnumRowNewUniq[idEnumRow] = idEnumRow;
                 }
-
-                const aEnumRowUniqNew = Object.values(ixEnumRowNewUniq)
-                if(aEnumRowUniqNew.length == 0) {
-                    delete this.ixLetter[kColUse+'--'+kEnumUse]
-                    await db('ix').where({'k':kColUse+'--'+kEnumUse})
-                    console.log('DEL:',kColUse,'-',kEnumUse)
-                } else {
-
-                    // console.log('ixChunkRowNewUniq ENUM', ixEnumRowNewUniq);
-
-                    const aRowsNew = new Uint32Array(aEnumRow.length + 100);
-                    // console.log('ОЧИСТКА ENUM3', kColUse, kEnumUse, aEnumRowUniqNew, aRowsNew)
-                    
-                    aRowsNew[0] = 0;
-                    for (let i = 0; i < aEnumRowUniqNew.length; i++) {
-                        const iEnumRowUniqNew = aEnumRowUniqNew[i];
-
-                        aRowsNew[i+4] = iEnumRowUniqNew;
-                        aRowsNew[0]++;
-                        
-                    }
-                    
-                    this.ixLetter[kColUse+'--'+kEnumUse] = aRowsNew;
-                    this.cnt++;
-                }
-                
             }
+
+            const aEnumRowUniqNew = Object.values(ixEnumRowNewUniq)
+            if(aEnumRowUniqNew.length == 0) {
+                delete this.ixLetter[kEnumUse]
+                await db('ix').where({'k':kEnumUse}).del()
+                console.log('DEL:',kEnumUse)
+            } else {
+
+                // console.log('ixChunkRowNewUniq ENUM', ixEnumRowNewUniq);
+
+                const aRowsNew = new Uint32Array(aEnumRow.length + 100);
+                // console.log('ОЧИСТКА ENUM3', kColUse, kEnumUse, aEnumRowUniqNew, aRowsNew)
+                
+                aRowsNew[0] = 0;
+                for (let i = 0; i < aEnumRowUniqNew.length; i++) {
+                    const iEnumRowUniqNew = aEnumRowUniqNew[i];
+
+                    aRowsNew[i+4] = iEnumRowUniqNew;
+                    aRowsNew[0]++;
+                    
+                }
+                
+                this.ixLetter[kEnumUse] = aRowsNew;
+                this.cnt++;
+            }
+                
         }
 
         const aChunkIndexInsert = [];
 
-        for (const kColUse in this.ixLetter) {
-            
-            const aChunkRow = this.ixLetter[kColUse];
-            console.log({
-                k:kColUse,
-                data:Buffer.from(aChunkRow.buffer)
-            });
-            aChunkIndexInsert.push({
-                k:kColUse,
-                data:Buffer.from(aChunkRow.buffer)
-            })
-            
-        }
-
         for (const k in this.ixLetter) {
    
-            const aEnumRow = this.ixLetter[k];
+            const aLetterRow = this.ixLetter[k];
             // console.log({
             //     k:k,
-            //     data:Buffer.from(aEnumRow.buffer)
+            //     data:Buffer.from(aLetterRow)
             // })
             aChunkIndexInsert.push({
                 k:k,
-                data:Buffer.from(aEnumRow.buffer)
+                data:Buffer.from(aLetterRow.buffer)
             })
-            
         }
 
-        await db('ix').insert(aChunkIndexInsert).onConflict().merge();
+        if(aChunkIndexInsert.length){
+            await db('ix').insert(aChunkIndexInsert).onConflict().merge();
+        }
 
         // console.log('ОЧИСТКА ENUM10', this.ixEnum);
         // for (const kColUse in ixChunkEnumUse) {
@@ -613,7 +610,7 @@ export class IxEngineSys {
     }
 
     /** run */
-    public search(query:QueryContextI) {
+    public async search(query:QueryContextI) {
 
         const ixQuery:Record<CmdT, any[]> = <any>{};
 
@@ -659,6 +656,56 @@ export class IxEngineSys {
         const aResult:Record<number, number>[] = [];
         const ixResult:Record<string, number> = {};
 
+        // ============================================
+        // Обнуление внутреннего индекса;
+        this.ixLetter = {};
+        const aSearchIndex:string[] = [];
+        // Заполнение поискового индекса
+        if(ixQuery[CmdT.match]){
+            
+            for (let i = 0; i < ixQuery[CmdT.match].length; i++) {
+                const aQuery = ixQuery[CmdT.match][i];
+
+                const asChunk = this.encriptChunk(aQuery[2]);
+                for (let j = 0; j < asChunk.length; j++) {
+                    const sChunk = asChunk[j];
+                    aSearchIndex.push(aQuery[1]+'--'+sChunk);
+                }
+            }
+        }
+
+        if(ixQuery[CmdT.in]){
+            
+            for (let i = 0; i < ixQuery[CmdT.in].length; i++) {
+                const aQuery = ixQuery[CmdT.in][i];
+                try {
+                    aQuery[2] = JSON.parse(aQuery[2])
+                } catch (error) {
+                    aQuery[2] = [];
+                }
+                
+                const sCol = aQuery[1];
+                
+                console.log(aQuery[2]);
+                for (let j = 0; j < aQuery[2].length; j++) {
+                    const valIn = aQuery[2][j];
+
+                    aSearchIndex.push(sCol+'--'+valIn);
+                }
+            }
+
+        }
+        const aUniqSearchIndex = _.uniq(aSearchIndex);
+        const aIndexDb = await db('ix').whereIn('k', aUniqSearchIndex);
+        for (let i = 0; i < aIndexDb.length; i++) {
+            const vIndexDb = aIndexDb[i];
+
+            var arrayBuffer = new Uint8Array(vIndexDb.data).buffer;
+            this.ixLetter[vIndexDb.k] = new Uint32Array(arrayBuffer, 0, arrayBuffer.byteLength/4); 
+        }
+
+        // ============================================
+
         // console.time('t');
 
         if(ixQuery[CmdT.match]){
@@ -699,7 +746,7 @@ export class IxEngineSys {
                     const valIn = aQuery[2][j];
 
                     // Проверяем наличие значения
-                    if(this.ixLetter[sCol][valIn]){
+                    if(this.ixLetter[sCol+'--'+valIn]){
                         aidInRow.push(...this.ixLetter[sCol+'--'+valIn])
                     }
                 }

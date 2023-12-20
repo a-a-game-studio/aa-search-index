@@ -31,7 +31,7 @@ async function run(){
     console.log('INSERT START');
     console.time('tInsert')
     await ixClientSys.insert('user', [{
-        'id':'54',
+        'id':'53',
         'username':'Ольга',
         'user_fullname':'Ольга Викторовна Петрович',
         'user_mobile':'79998887766',
@@ -41,11 +41,51 @@ async function run(){
     }]);
 
     await ixClientSys.insert('user', [{
+        'id':'54',
+        'username':'Ольга Виктория',
+        'user_fullname':'Ольга Викторовна Петрович',
+        'user_mobile':'79998887766',
+        'consumer_rating':'2',
+        'login':'Ольга',
+        'user_id':'54',
+    }]);
+
+    await ixClientSys.insert('user', [{
         'id':'55',
-        'username':'Ольха',
+        'username':'Ольха Льга',
         'user_fullname':'Ольха Яковлевна Гемеургевич',
         'user_mobile':'71112227766',
         'consumer_rating':'1',
+        'login':'Ольха',
+        'user_id':'54',
+    }]);
+
+    await ixClientSys.insert('user', [{
+        'id':'57',
+        'username':'Ильга И',
+        'user_fullname':'Ильга Яковлевна Гемеургевич',
+        'user_mobile':'71112227766',
+        'consumer_rating':'3',
+        'login':'Ольха',
+        'user_id':'54',
+    }]);
+
+    await ixClientSys.insert('user', [{
+        'id':'58',
+        'username':'Ольга Ильга Дельга',
+        'user_fullname':'Ильга Яковлевна Гемеургевич',
+        'user_mobile':'71112227766',
+        'consumer_rating':'3',
+        'login':'Ольха',
+        'user_id':'54',
+    }]);
+
+    await ixClientSys.insert('user', [{
+        'id':'59',
+        'username':'Ильги',
+        'user_fullname':'Ильги Яковлевна Гемеургевич',
+        'user_mobile':'71112227766',
+        'consumer_rating':'3',
         'login':'Ольха',
         'user_id':'54',
     }]);

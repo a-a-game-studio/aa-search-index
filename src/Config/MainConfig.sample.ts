@@ -1,5 +1,5 @@
 
-export const dbConf = { // Knex mysql
+export const dbIndex = { // Knex mysql
     client: "mysql2",
     connection: {
         host: "localhost",

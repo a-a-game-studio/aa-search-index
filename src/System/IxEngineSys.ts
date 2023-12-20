@@ -51,12 +51,13 @@ export class IxEngineSys {
     }
 
     /** find fulltext */
-    find(sText:string, sCol:string):Record<number, number>{
+    async find(sText:string, sCol:string):Promise<Record<number, number>>{
         
         const sTextLow = sText.toLowerCase();
         const ixFind:Record<number, number> = {}; // Результат
 
-        // console.log('FIND',this.ixLetter)
+        // console.log('FIND LETTER:',this.ixLetter)
+        // console.log('FIND DATA:',this.ixData)
 
         if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_string || this.ixSchema[sCol] == SchemaT.ix_text){
 
@@ -80,13 +81,15 @@ export class IxEngineSys {
 
                         console.log('>>>', c, idData)
 
-                        if (!ixIndex[idData] && c == 0){
+                        if (!ixIndex[idData] && c < 2){
                             ixIndex[idData] = 0;
                             // console.log('>>>',aIndex)
                         }
 
                         if(!ixUniq[idData]){
-                            if (ixIndex[idData] >= c){
+                            console.log('FIND UP IF:',ixIndex[idData],'>=', c - 2)
+                            console.log('FIND DEL IF:', aFindText.length - c, '<= 2', aFindText.length - 2, '>', ixIndex[idData])
+                            if (ixIndex[idData] >= c - 2){
                                 ixIndex[idData]++;
                                 ixUniq[idData] = true;
                             } else if (ixIndex[idData]) {
@@ -97,48 +100,60 @@ export class IxEngineSys {
 
                     }
 
-                    // console.log(ixIndex);
+                    console.log('ixIndex:',ixIndex);
 
                 }
             }
 
-            const aIndexSort:number[] = [];
+            const aidIndexSort:number[] = [];
             for (const k in ixIndex) {
                 const v = ixIndex[k];
-                if (v >= aFindText.length){
-                    aIndexSort.push(Number(k));
+                // console.log('FIND SORT FILTER:',v, '>=', aFindText.length);
+                if (v >= aFindText.length - 2){
+                    aidIndexSort.push(Number(k));
                 }
             }
 
-            const aFindLoginRaw = aIndexSort;
+            const aidFindRaw = aidIndexSort;
+            console.log('aidFindRaw:', aidFindRaw);
 
+            // TODO тут забираются лишние данные повторно при втором match
+            const aRowDB = await db('dt').whereIn('id', aidFindRaw).select();
+            for (let i = 0; i < aRowDB.length; i++) {
+                const vRowDB = aRowDB[i];
+                this.ixData[vRowDB.id] = vRowDB;
+            }
 
-            for (let i = 0; i < aFindLoginRaw.length; i++) {
-                const idFindLoginRaw = aFindLoginRaw[i];
-                if(!idFindLoginRaw) continue;
+            // console.log('FIND this.ixData:',this.ixData);
 
-                const sWordLow = this.ixData[idFindLoginRaw][sCol];
+            for (let i = 0; i < aidFindRaw.length; i++) {
+                const idFindRaw = aidFindRaw[i];
+                if(!idFindRaw) continue;
+
+                const sWordLow = this.ixData[idFindRaw][sCol];
 
                 // console.log(sTextLow, sTextLow.length, sWordLow, sWordLow.length);
 
-                if (sTextLow.length == sWordLow.length){
+                if (sTextLow.length == sWordLow.length && ixIndex[idFindRaw] == aFindText.length){
                     if (sTextLow == sWordLow){
-                        if(!ixFind[idFindLoginRaw]){
-                            ixFind[idFindLoginRaw] = 0;
+                        if(!ixFind[idFindRaw]){
+                            ixFind[idFindRaw] = 0;
                         }
-                        ixFind[idFindLoginRaw] += 3;
+                        ixFind[idFindRaw] += 3;
                     }
                 } else {
+
+                    // console.log(sTextLow, sTextLow.length, sWordLow, sWordLow.length);
                     if (sWordLow.indexOf(sTextLow) == 0){
-                        if(!ixFind[idFindLoginRaw]){
-                            ixFind[idFindLoginRaw] = 0;
+                        if(!ixFind[idFindRaw]){
+                            ixFind[idFindRaw] = 0;
                         }
-                        ixFind[idFindLoginRaw] += 2;
+                        ixFind[idFindRaw] += 2;
                     } else {
-                        if(!ixFind[idFindLoginRaw]){
-                            ixFind[idFindLoginRaw] = 0;
+                        if(!ixFind[idFindRaw]){
+                            ixFind[idFindRaw] = 0;
                         }
-                        ixFind[idFindLoginRaw] += 1;
+                        ixFind[idFindRaw] += 1;
                     }
                 }
 
@@ -163,7 +178,7 @@ export class IxEngineSys {
 
         // const asFindResult = _.concat(aEqLenLow,aMoreLenLowFirst,aMoreLenLow)
 
-        // console.log('find', asFindResult);
+        console.log('find', ixFind);
 
         return ixFind;
     }
@@ -262,7 +277,7 @@ export class IxEngineSys {
         console.log('aRowDB:',aData,aidRow, aRowDB);
         
 
-        // Получение данных из БД
+        // Сбор чанков и данных из БД
         for (let c = 0; c < aRowDB.length; c++) {
             const vRowDB = aRowDB[c];
             this.ixData[vRowDB.id] = vRowDB;
@@ -285,10 +300,30 @@ export class IxEngineSys {
 
         }
 
+        // Сбор чанков из входных данных
+        for (let c = 0; c < aData.length; c++) {
+            const vRowInput = aData[c];
+
+            const akData = Object.keys(vRowInput);
+
+            for (let i = 0; i < akData.length; i++) {
+                const kData = akData[i];
+                if(this.ixSchema[kData] == SchemaT.ix_enum){
+                    aChunkString.push(kData+'--'+vRowInput[kData])
+                }
+
+                if(this.ixSchema[kData] == SchemaT.ix_string){
+                    aChunkString.push(...this.encriptChunk(vRowInput[kData]).map((el) => kData+'--'+el));
+                }
+            }
+        }
+
+        console.log('aChunkString>>>',aChunkString);
+
         this.ixLetter = {};
         if(aChunkString.length){
             const aIndexDB = await db('ix').whereIn('k', aChunkString).select();
-            console.log('aChunkString>>>',aChunkString);
+            
             for (let i = 0; i < aIndexDB.length; i++) {
                 const vIndexDb = aIndexDB[i];
 
@@ -713,7 +748,7 @@ export class IxEngineSys {
                 const aQuery = ixQuery[CmdT.match][i];
 
                 console.log('query:',aQuery.slice(2).join(' ').toLowerCase(), aQuery[1])
-                aResult.push(this.find(aQuery.slice(2).join(' ').toLowerCase(), aQuery[1]));
+                aResult.push(await this.find(aQuery.slice(2).join(' ').toLowerCase(), aQuery[1]));
             }
 
             // Сборка значений поиска

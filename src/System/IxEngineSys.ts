@@ -405,8 +405,8 @@ export class IxEngineSys {
                     console.log('DEL CHUNK',aDelChunk);
 
                     // const vLetterCol = this.ixLetter[sCol];
-                    for (let i = 0; i < aDelChunk.length; i++) {
-                        const sOldChunk = aDelChunk[i];
+                    for (let j = 0; j < aDelChunk.length; j++) {
+                        const sOldChunk = aDelChunk[j];
                         
                         if(this.ixLetter[sCol+'--'+sOldChunk]){
 
@@ -423,8 +423,8 @@ export class IxEngineSys {
                     
                 }
 
-                for (let i = 0; i < aDataChunk.length; i++) {
-                    const sDataChunk = aDataChunk[i];
+                for (let j = 0; j < aDataChunk.length; j++) {
+                    const sDataChunk = aDataChunk[j];
                     
 
 
@@ -462,10 +462,12 @@ export class IxEngineSys {
                     this.cnt++;
                     if(this.cnt > 100000){
                         this.cnt = 0;
-                        console.log('indexation_chunk',this.cnt, this.cntCopy++);
+                        console.log('indexation_chunk',c, this.cntCopy++);
                     }
 
                 }
+
+                // process.stdout.write('.')
 
             }
 
@@ -473,11 +475,15 @@ export class IxEngineSys {
             
 
             // console.log(this.ixData[idRow]);
-            await db('dt').insert(aData).onConflict().merge();
+            
 
             // vUser.username;
 
+            process.stdout.write('.')
+
         }
+
+        await db('dt').insert(aData).onConflict().merge();
 
         // const akChunkUse = Object.keys(ixChunkUse);
         // ОЧИСТКА

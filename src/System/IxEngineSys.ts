@@ -479,7 +479,7 @@ export class IxEngineSys {
 
             // vUser.username;
 
-            process.stdout.write('.')
+            // process.stdout.write('.')
 
         }
 

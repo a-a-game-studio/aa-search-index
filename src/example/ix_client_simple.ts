@@ -83,7 +83,7 @@ async function run(){
     await ixClientSys.insert('user', [{
         'id':'59',
         'username':'Ильги',
-        'user_fullname':'Ильги Яковлевна Гемеургевич',
+        'user_fullname':'Ильги Яковлевна Григорьевич',
         'user_mobile':'71112227766',
         'consumer_rating':'3',
         'login':'Ольха',
@@ -93,7 +93,7 @@ async function run(){
     await ixClientSys.insert('user', [{
         'id':'56',
         'username':'Василиса',
-        'user_fullname':'Василиса Яковлевна Гемеургевич',
+        'user_fullname':'Василиса Яковлевна Геуургевич',
         'user_mobile':'79992227766',
         'consumer_rating':'1',
         'login':'Ольха',
@@ -103,7 +103,7 @@ async function run(){
     await ixClientSys.insert('user', [{
         'id':'56',
         'username':'Василис',
-        'user_fullname':'Василис Як Гемеургевич',
+        'user_fullname':'Василис Як Кемеургевич',
         'user_mobile':'79992227766',
         'consumer_rating':'1',
         'login':'Ольха',
@@ -113,8 +113,8 @@ async function run(){
 
     console.time('tSelectString')
     const aidSelect = await ixClientSys.select('user', ixClientSys.query()
-        .match('username', 'Ольга')
-        // .match('user_fullname', 'яковевна')
+        // .match('username', 'Ольга')
+        .match('user_fullname', 'яковевна геме')
         // .match('username', 'света')
         // .match('id', '26096')
         // .in('id', ['156','26096','62634','58448'])

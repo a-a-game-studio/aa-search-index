@@ -217,7 +217,7 @@ export class IxEngineSys {
                     }
 
                     if(v == SchemaT.num){
-                        table.decimal(k, 2)
+                        table.decimal(k, 10)
                             .defaultTo(0)
                     }
 
@@ -274,7 +274,7 @@ export class IxEngineSys {
         const aidRow = aData.map(el => Number(el.id));
         const aRowDB = await db('dt').whereIn('id', aidRow).select();
 
-        console.log('aRowDB:',aData,aidRow, aRowDB);
+        // console.log('aRowDB:',aData,aidRow, aRowDB);
         
 
         // Сбор чанков и данных из БД
@@ -333,7 +333,7 @@ export class IxEngineSys {
             }
         }
 
-        console.log('--->',this.ixLetter['username--о-л-ь']);
+        // console.log('--->',this.ixLetter['username--о-л-ь']);
 
         // console.log('fIndexation.ixLetter', aChunkString);
         
@@ -454,7 +454,7 @@ export class IxEngineSys {
                         this.ixLetter[sCol+'--'+sDataChunk] = new Uint32Array(this.ixLetter[sCol+'--'+sDataChunk], 0, this.ixLetter[sCol+'--'+sDataChunk].length * 2)
                     }
 
-                    console.log('>>>:',sCol+'--'+sDataChunk, this.ixLetter[sCol+'--'+sDataChunk][0])
+                    // console.log('>>>:',sCol+'--'+sDataChunk, this.ixLetter[sCol+'--'+sDataChunk][0])
                     this.ixLetter[sCol+'--'+sDataChunk][iDataLength+4] = vRow.id;
                     this.ixLetter[sCol+'--'+sDataChunk][0]++;
 
@@ -482,7 +482,7 @@ export class IxEngineSys {
         // ОЧИСТКА
 
         
-        console.log('ОЧИСТКА1', ixChunkLetterUse);
+        // console.log('ОЧИСТКА1', ixChunkLetterUse);
         for (const kChunkUse in ixChunkLetterUse) {
 
             const aChunkRow = this.ixLetter[kChunkUse];
@@ -591,7 +591,13 @@ export class IxEngineSys {
         }
 
         if(aChunkIndexInsert.length){
-            await db('ix').insert(aChunkIndexInsert).onConflict().merge();
+            const aaChunkIndexInsertChunk = _.chunk(aChunkIndexInsert, 100);
+            for (let i = 0; i < aaChunkIndexInsertChunk.length; i++) {
+                const aChunkIndexInsertChunk = aaChunkIndexInsertChunk[i];
+                await db('ix').insert(aChunkIndexInsertChunk).onConflict().merge();
+                process.stdout.write('.');
+            }
+            
         }
 
         // console.log('ОЧИСТКА ENUM10', this.ixEnum);

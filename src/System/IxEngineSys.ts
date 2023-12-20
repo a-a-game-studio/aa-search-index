@@ -282,56 +282,57 @@ export class IxEngineSys {
             const vRowDB = aRowDB[c];
             this.ixData[vRowDB.id] = vRowDB;
 
-            const akData = Object.keys(vRowDB);
+            // TODO тормозит временно
+            // const akData = Object.keys(vRowDB);
 
-            // console.log(akData)
-            for (let i = 0; i < akData.length; i++) {
-                const kData = akData[i];
+            // // console.log(akData)
+            // for (let i = 0; i < akData.length; i++) {
+            //     const kData = akData[i];
 
-                // console.log(kData,':',this.ixSchema[kData], this.ixSchema[kData]);
-                if(this.ixSchema[kData] == SchemaT.ix_enum){
-                    aChunkString.push(kData+'--'+vRowDB[kData])
-                }
+            //     // console.log(kData,':',this.ixSchema[kData], this.ixSchema[kData]);
+            //     if(this.ixSchema[kData] == SchemaT.ix_enum){
+            //         aChunkString.push(kData+'--'+vRowDB[kData])
+            //     }
 
-                if(this.ixSchema[kData] == SchemaT.ix_string){
-                    aChunkString.push(...this.encriptChunk(vRowDB[kData]).map((el) => kData+'--'+el));
-                }
-            }
+            //     if(this.ixSchema[kData] == SchemaT.ix_string){
+            //         aChunkString.push(...this.encriptChunk(vRowDB[kData]).map((el) => kData+'--'+el));
+            //     }
+            // }
 
         }
 
         // Сбор чанков из входных данных
-        for (let c = 0; c < aData.length; c++) {
-            const vRowInput = aData[c];
+        // for (let c = 0; c < aData.length; c++) {
+        //     const vRowInput = aData[c];
 
-            const akData = Object.keys(vRowInput);
+        //     const akData = Object.keys(vRowInput);
 
-            for (let i = 0; i < akData.length; i++) {
-                const kData = akData[i];
-                if(this.ixSchema[kData] == SchemaT.ix_enum){
-                    aChunkString.push(kData+'--'+vRowInput[kData])
-                }
+        //     for (let i = 0; i < akData.length; i++) {
+        //         const kData = akData[i];
+        //         if(this.ixSchema[kData] == SchemaT.ix_enum){
+        //             aChunkString.push(kData+'--'+vRowInput[kData])
+        //         }
 
-                if(this.ixSchema[kData] == SchemaT.ix_string){
-                    aChunkString.push(...this.encriptChunk(vRowInput[kData]).map((el) => kData+'--'+el));
-                }
-            }
-        }
+        //         if(this.ixSchema[kData] == SchemaT.ix_string){
+        //             aChunkString.push(...this.encriptChunk(vRowInput[kData]).map((el) => kData+'--'+el));
+        //         }
+        //     }
+        // }
 
-        console.log('aChunkString>>>',aChunkString);
+        // console.log('aChunkString>>>',aChunkString);
 
-        this.ixLetter = {};
-        if(aChunkString.length){
-            const aIndexDB = await db('ix').whereIn('k', aChunkString).select();
+        // this.ixLetter = {};
+        // if(aChunkString.length){
+        //     const aIndexDB = await db('ix').whereIn('k', aChunkString).select();
             
-            for (let i = 0; i < aIndexDB.length; i++) {
-                const vIndexDb = aIndexDB[i];
+        //     for (let i = 0; i < aIndexDB.length; i++) {
+        //         const vIndexDb = aIndexDB[i];
 
-                var arrayBuffer = new Uint8Array(vIndexDb.data).buffer;
-                this.ixLetter[vIndexDb.k] = new Uint32Array(arrayBuffer, 0, arrayBuffer.byteLength/4); 
-                // console.log(vIndexDb.k, this.ixLetter[vIndexDb.k])
-            }
-        }
+        //         var arrayBuffer = new Uint8Array(vIndexDb.data).buffer;
+        //         this.ixLetter[vIndexDb.k] = new Uint32Array(arrayBuffer, 0, arrayBuffer.byteLength/4); 
+        //         // console.log(vIndexDb.k, this.ixLetter[vIndexDb.k])
+        //     }
+        // }
 
         // console.log('--->',this.ixLetter['username--о-л-ь']);
 
@@ -504,7 +505,7 @@ export class IxEngineSys {
             const aChunkRowUniqNew = Object.values(ixChunkRowNewUniq)
             if(aChunkRowUniqNew.length == 0) {
                 delete this.ixLetter[kChunkUse]
-                await db('ix').where({'k':kChunkUse}).del();
+                // await db('ix').where({'k':kChunkUse}).del(); // TODO временно убрано
                 console.log('DEL:',kChunkUse)
             } else {
 
@@ -551,7 +552,7 @@ export class IxEngineSys {
             const aEnumRowUniqNew = Object.values(ixEnumRowNewUniq)
             if(aEnumRowUniqNew.length == 0) {
                 delete this.ixLetter[kEnumUse]
-                await db('ix').where({'k':kEnumUse}).del()
+                // await db('ix').where({'k':kEnumUse}).del() // TODO временно убрано
                 console.log('DEL:',kEnumUse)
             } else {
 
@@ -577,28 +578,29 @@ export class IxEngineSys {
 
         const aChunkIndexInsert = [];
 
-        for (const k in this.ixLetter) {
+        // TODO временно убрано - тормозит
+        // for (const k in this.ixLetter) {
    
-            const aLetterRow = this.ixLetter[k];
-            // console.log({
-            //     k:k,
-            //     data:Buffer.from(aLetterRow)
-            // })
-            aChunkIndexInsert.push({
-                k:k,
-                data:Buffer.from(aLetterRow.buffer)
-            })
-        }
+        //     const aLetterRow = this.ixLetter[k];
+        //     // console.log({
+        //     //     k:k,
+        //     //     data:Buffer.from(aLetterRow)
+        //     // })
+        //     aChunkIndexInsert.push({
+        //         k:k,
+        //         data:Buffer.from(aLetterRow.buffer)
+        //     })
+        // }
 
-        if(aChunkIndexInsert.length){
-            const aaChunkIndexInsertChunk = _.chunk(aChunkIndexInsert, 100);
-            for (let i = 0; i < aaChunkIndexInsertChunk.length; i++) {
-                const aChunkIndexInsertChunk = aaChunkIndexInsertChunk[i];
-                await db('ix').insert(aChunkIndexInsertChunk).onConflict().merge();
-                process.stdout.write('.');
-            }
+        // if(aChunkIndexInsert.length){
+        //     const aaChunkIndexInsertChunk = _.chunk(aChunkIndexInsert, 100);
+        //     for (let i = 0; i < aaChunkIndexInsertChunk.length; i++) {
+        //         const aChunkIndexInsertChunk = aaChunkIndexInsertChunk[i];
+        //         await db('ix').insert(aChunkIndexInsertChunk).onConflict().merge();
+        //         process.stdout.write('.');
+        //     }
             
-        }
+        // }
 
         // console.log('ОЧИСТКА ENUM10', this.ixEnum);
         // for (const kColUse in ixChunkEnumUse) {
@@ -697,53 +699,54 @@ export class IxEngineSys {
         const aResult:Record<number, number>[] = [];
         const ixResult:Record<string, number> = {};
 
-        // ============================================
-        // Обнуление внутреннего индекса;
-        this.ixLetter = {};
-        const aSearchIndex:string[] = [];
-        // Заполнение поискового индекса
-        if(ixQuery[CmdT.match]){
+        // TODO временно убрано - тормозиться
+        // // ============================================
+        // // Обнуление внутреннего индекса;
+        // this.ixLetter = {};
+        // const aSearchIndex:string[] = [];
+        // // Заполнение поискового индекса
+        // if(ixQuery[CmdT.match]){
             
-            for (let i = 0; i < ixQuery[CmdT.match].length; i++) {
-                const aQuery = ixQuery[CmdT.match][i];
+        //     for (let i = 0; i < ixQuery[CmdT.match].length; i++) {
+        //         const aQuery = ixQuery[CmdT.match][i];
 
-                const asChunk = this.encriptChunk(aQuery[2]);
-                for (let j = 0; j < asChunk.length; j++) {
-                    const sChunk = asChunk[j];
-                    aSearchIndex.push(aQuery[1]+'--'+sChunk);
-                }
-            }
-        }
+        //         const asChunk = this.encriptChunk(aQuery[2]);
+        //         for (let j = 0; j < asChunk.length; j++) {
+        //             const sChunk = asChunk[j];
+        //             aSearchIndex.push(aQuery[1]+'--'+sChunk);
+        //         }
+        //     }
+        // }
 
-        if(ixQuery[CmdT.in]){
+        // if(ixQuery[CmdT.in]){
             
-            for (let i = 0; i < ixQuery[CmdT.in].length; i++) {
-                const aQuery = ixQuery[CmdT.in][i];
-                try {
-                    aQuery[2] = JSON.parse(aQuery[2])
-                } catch (error) {
-                    aQuery[2] = [];
-                }
+        //     for (let i = 0; i < ixQuery[CmdT.in].length; i++) {
+        //         const aQuery = ixQuery[CmdT.in][i];
+        //         try {
+        //             aQuery[2] = JSON.parse(aQuery[2])
+        //         } catch (error) {
+        //             aQuery[2] = [];
+        //         }
                 
-                const sCol = aQuery[1];
+        //         const sCol = aQuery[1];
                 
-                console.log(aQuery[2]);
-                for (let j = 0; j < aQuery[2].length; j++) {
-                    const valIn = aQuery[2][j];
+        //         console.log(aQuery[2]);
+        //         for (let j = 0; j < aQuery[2].length; j++) {
+        //             const valIn = aQuery[2][j];
 
-                    aSearchIndex.push(sCol+'--'+valIn);
-                }
-            }
+        //             aSearchIndex.push(sCol+'--'+valIn);
+        //         }
+        //     }
 
-        }
-        const aUniqSearchIndex = _.uniq(aSearchIndex);
-        const aIndexDb = await db('ix').whereIn('k', aUniqSearchIndex);
-        for (let i = 0; i < aIndexDb.length; i++) {
-            const vIndexDb = aIndexDb[i];
+        // }
+        // const aUniqSearchIndex = _.uniq(aSearchIndex);
+        // const aIndexDb = await db('ix').whereIn('k', aUniqSearchIndex);
+        // for (let i = 0; i < aIndexDb.length; i++) {
+        //     const vIndexDb = aIndexDb[i];
 
-            var arrayBuffer = new Uint8Array(vIndexDb.data).buffer;
-            this.ixLetter[vIndexDb.k] = new Uint32Array(arrayBuffer, 0, arrayBuffer.byteLength/4); 
-        }
+        //     var arrayBuffer = new Uint8Array(vIndexDb.data).buffer;
+        //     this.ixLetter[vIndexDb.k] = new Uint32Array(arrayBuffer, 0, arrayBuffer.byteLength/4); 
+        // }
 
         // ============================================
 

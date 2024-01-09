@@ -69,7 +69,7 @@ router.ws(QueryT.schema, async (ctx: AAContext) => {
  */
  router.ws(QueryT.select, async (ctx: AAContext) => {
 
-    let data:number[] = [];
+    let data:any[] = [];
     try { 
         data = await gIxEngineSys.search(ctx.body);
     } catch(e){

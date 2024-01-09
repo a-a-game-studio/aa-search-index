@@ -113,12 +113,12 @@ async function run(){
 
     console.time('tSelectString')
     const aidSelect = await ixClientSys.select('user', ixClientSys.query()
-        // .match('username', 'Ольга')
-        .match('user_fullname', 'яковевна геме')
+        .match('username', 'Ольга')
+        // .match('user_fullname', 'яковевна геме')
         // .match('username', 'света')
         // .match('id', '26096')
-        // .in('id', ['156','26096','62634','58448'])
-        // .where('consumer_rating', '=', String(1))
+        .in('id', ['53','58','56','62634','58448'])
+        .where('consumer_rating', '=', String(3))
         // .where('id', '=', '26096')
         .limit(10)
     );

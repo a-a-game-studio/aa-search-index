@@ -161,16 +161,16 @@ export class IxEngineSys {
         } else if(this.ixSchema[sCol] && this.ixSchema[sCol] == SchemaT.ix_enum) {
             const aidData = this.ixLetter[sCol+'--'+sTextLow];
             if(aidData){
-                for (let i = 4; i < aidData[0]; i++) {
-                    const idData = aidData[i];
+                for (let i = 0; i < aidData[0]; i++) {
+                    const idData = aidData[i+4];
                     ixFind[idData] = 3;
                 }
             }
         } else if(sCol === 'id') {
             const aidData = this.ixLetter[sCol+'--'+sTextLow];
             if(aidData){
-                for (let i = 4; i < aidData[0]; i++) {
-                    const idData = aidData[i];
+                for (let i = 0; i < aidData[0]; i++) {
+                    const idData = aidData[i+4];
                     ixFind[idData] = 3;
                 }
             }
@@ -703,7 +703,7 @@ export class IxEngineSys {
         
 
         const aResult:Record<number, number>[] = [];
-        const ixResult:Record<string, number> = {};
+        let ixResult:Record<string, number> = {};
 
         // TODO временно убрано - тормозиться
         // // ============================================
@@ -780,6 +780,7 @@ export class IxEngineSys {
                 }
             }
         } else if(ixQuery[CmdT.in]){ // Если match нет - мы берем выборку по id которые прямо указаны
+            let aidInRow:number[] = [];
             for (let i = 0; i < ixQuery[CmdT.in].length; i++) {
                 const aQuery = ixQuery[CmdT.in][i];
                 try {
@@ -789,36 +790,37 @@ export class IxEngineSys {
                 }
                 
                 const sCol = aQuery[1];
-                let aidInRow:number[] = [];
+            
+                
                 
                 console.log(aQuery[2]);
                 for (let j = 0; j < aQuery[2].length; j++) {
                     const valIn = aQuery[2][j];
 
+
                     // Проверяем наличие значения
-                    if(this.ixLetter[sCol+'--'+valIn]){
+                    if(sCol == 'id'){
+                        aidInRow.push(Number(valIn));
+                        console.log('SEARCH IN:',sCol, valIn);
+                    } else if(this.ixLetter[sCol+'--'+valIn]){
                         aidInRow.push(...this.ixLetter[sCol+'--'+valIn])
                     }
                 }
+            }
 
-                const ixInRow = _.keyBy(aidInRow);
-                
-
-                for (const kRes in ixInRow) {
-                    const idData = Number(kRes);
-                    
-                    if(!ixResult[idData]){
-                        ixResult[idData] = 1;
-                    }
-                }
+            aidInRow = _.uniq(aidInRow);
+            for (let j = 0; j < aidInRow.length; j++) {
+                ixResult[aidInRow[j]] = 1;
             }
         } else {
-            const aidData = Object.keys(this.ixData);
-            for (let i = 0; i < aidData.length; i++) {
-                const idData = aidData[i];
-                ixResult[idData] = 1;
-            }
+            // const aidData = Object.keys(this.ixData);
+            // for (let i = 0; i < aidData.length; i++) {
+            //     const idData = aidData[i];
+            //     ixResult[idData] = 1;
+            // }
         }
+
+        
 
         // Обработка выборки по IN после match если он есть
         if(ixQuery[CmdT.in] && ixQuery[CmdT.match]){
@@ -834,12 +836,12 @@ export class IxEngineSys {
                 const sCol = aQuery[1];
                 let aidInRow:number[] = [];
                 
-                console.log(aQuery[2]);
+                // console.log('LALA',aQuery[2]);
                 for (let j = 0; j < aQuery[2].length; j++) {
                     const valIn = aQuery[2][j];
 
                     // Проверяем наличие значения
-                    if(this.ixLetter[sCol][valIn]){
+                    if(this.ixLetter[sCol+'--'+valIn]){
                         aidInRow.push(...this.ixLetter[sCol+'--'+valIn])
                     }
                 }
@@ -857,6 +859,14 @@ export class IxEngineSys {
             }
             
         }
+
+        // Если есть полнотекст добавляем список id удовлетворяющих нашему запросу
+        const aidRow = Object.keys(ixResult).map(el => Number(el))
+        const dbQuery = db('dt')
+        if(aidRow.length){
+            dbQuery.whereIn('id', aidRow);
+        }
+        
         
         // console.log('result:', aResult[0]);
         
@@ -874,43 +884,63 @@ export class IxEngineSys {
 
                     // console.log(aCmd);
                     if(aCmd[2] == '='){
-                        if(vRow[aCmd[1]] != Number(aCmd[3])){
-                            delete ixResult[idData];
-                        }
+                        // if(vRow[aCmd[1]] != Number(aCmd[3])){
+                        //     delete ixResult[idData];
+                        // }
+
+                        dbQuery.where(aCmd[1], '=', Number(aCmd[3]));
                     } else if(aCmd[2] == '>'){
-                        if(vRow[aCmd[1]] <= Number(aCmd[3])){
-                            delete ixResult[idData];
-                        }
+                        // if(vRow[aCmd[1]] <= Number(aCmd[3])){
+                        //     delete ixResult[idData];
+                        // }
+                        dbQuery.where(aCmd[1], '>', Number(aCmd[3]));
                     } else if(aCmd[2] == '>='){
-                        if(vRow[aCmd[1]] < Number(aCmd[3])){
-                            delete ixResult[idData];
-                        }
+                        // if(vRow[aCmd[1]] < Number(aCmd[3])){
+                        //     delete ixResult[idData];
+                        // }
+                        dbQuery.where(aCmd[1], '>=', Number(aCmd[3]));
                     } else if(aCmd[2] == '<'){
-                        if(vRow[aCmd[1]] >= Number(aCmd[3])){
-                            delete ixResult[idData];
-                        }
+                        // if(vRow[aCmd[1]] >= Number(aCmd[3])){
+                        //     delete ixResult[idData];
+                        // }
+                        dbQuery.where(aCmd[1], '<', Number(aCmd[3]));
                     } else if(aCmd[2] == '<='){
-                        if(vRow[aCmd[1]] > Number(aCmd[3])){
-                            delete ixResult[idData];
-                        }
+                        // if(vRow[aCmd[1]] > Number(aCmd[3])){
+                        //     delete ixResult[idData];
+                        // }
+                        dbQuery.where(aCmd[1], '<=', Number(aCmd[3]));
                     }
                 }
             }
         }
 
-        let aSortResult = Object.entries(ixResult).sort((a,b) => b[1] - a[1]).map(el => Number(el[0]))
-
         if(ixQuery[CmdT.limit]){
-            aSortResult = aSortResult.slice(0, Number(ixQuery[CmdT.limit][1]) || 10);
+            dbQuery.limit(Number(ixQuery[CmdT.limit][1]) || 10);
         }
 
+        const aRowDB = await dbQuery.select();
+
+        const ixResultNew:Record<number, number> = {};
+        for (let i = 0; i < aRowDB.length; i++) {
+            const vRowDB = aRowDB[i];
+            this.ixData[vRowDB.id] = vRowDB;
+            if(ixResult[vRowDB.id]){
+                ixResultNew[vRowDB.id] = ixResult[vRowDB.id];
+            } else {
+                ixResultNew[vRowDB.id] = 1;
+            }
+        }
+        ixResult = ixResultNew;
+
+        let aidSortResult = Object.entries(ixResult).sort((a,b) => b[1] - a[1]).map(el => Number(el[0]))
+        
         // console.timeEnd('t');
 
         // ========================================
 
         const aOutData = [];
-        for (let i = 0; i < aSortResult.length; i++) {
-            const idData = Number(aSortResult[i]);
+        for (let i = 0; i < aidSortResult.length; i++) {
+            const idData = Number(aidSortResult[i]);
 
             if (this.ixData[idData]){
                 const aLineData = [];
@@ -932,7 +962,7 @@ export class IxEngineSys {
         console.log(`${formatMemoryUsage(memoryData.heapUsed)} -> actual memory used during the execution`),
         console.log(`${formatMemoryUsage(memoryData.external)} -> V8 external memory`);
 
-        return aSortResult
+        return aOutData
 
     }
     
